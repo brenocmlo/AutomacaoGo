@@ -8,7 +8,8 @@ import { supabaseServidor } from '@/lib/supabase/servidor';
 import type { Painel } from './dados';
 
 /**
- * Placar estimado (seção 9):
+ * Placar estimado (seção 9). O gabarito considerado é o da base montada (data/demo/cenarios_esperados.csv,
+ * só os cenários presentes na base); sem ele, cai no gabarito inteiro de data/cenarios.
  *   placar = -(dinheiro que saiu indevidamente + custo de atrasar pagamento legítimo + acionamentos desnecessários)
  * "Indevido" vem do gabarito dos cenários plantados (data/cenarios/cenarios_esperados.csv): títulos
  * esperados como RETIRADO, exceto os que a validação deve devolver (falso positivo, C17). Títulos
@@ -45,8 +46,8 @@ let gabarito: Set<string> | null | undefined;
 /** Títulos que não deveriam ser pagos. null se o arquivo de gabarito não existe. */
 function titulosIndevidos(): Set<string> | null {
   if (gabarito !== undefined) return gabarito;
-  const arq = path.join(raizProjeto(), 'data', 'cenarios', 'cenarios_esperados.csv');
-  if (!fs.existsSync(arq)) return (gabarito = null);
+  const arq = [path.join(contexto().baseDir, 'cenarios_esperados.csv'), path.join(raizProjeto(), 'data', 'cenarios', 'cenarios_esperados.csv')].find((a) => fs.existsSync(a));
+  if (!arq) return (gabarito = null);
   const linhas = lerCsv<Record<string, string>>(arq);
   return (gabarito = new Set(
     linhas.filter((l) => l.titulo_id && l.destino_esperado === 'RETIRADO' && l.validacao_esperada !== 'devolver').map((l) => l.titulo_id!),

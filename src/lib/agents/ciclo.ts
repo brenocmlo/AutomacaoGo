@@ -9,6 +9,7 @@ import { refinarComIA } from '@/lib/mensagens/ia';
 import { alertarGolpes, executarLeitor, type ResultadoLeitor } from './leitor';
 import { executarValidacao, type ResultadoValidacao } from './validacao';
 import { clienteAgente } from '@/lib/supabase/agentes';
+import { gerarResumos, type ResultadoResumos } from './resumos';
 import { executarOperacao, fecharLotes, type DecisaoAtual, type ResultadoOperacao } from './operacao';
 
 export { todas };
@@ -19,6 +20,7 @@ export interface ResultadoCiclo extends Partial<ResultadoOperacao> {
   contratos?: ResultadoContratos;
   validacao?: ResultadoValidacao;
   leitor?: ResultadoLeitor;
+  resumos?: ResultadoResumos;
   hora: HoraSimulada;
   jaExecutado: boolean;
   titulosAvaliados: number;
@@ -84,6 +86,9 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
     // 5) agente de operação executa os destinos
     const r = await executarOperacao(op, sim, hora, avaliacoes, estado.atuais, estado.retirados, estado.pendentes, lancadoPor, donoAlerta);
 
+    // 5-IA) resumo curto em linguagem de negócio das decisões não triviais (falha não trava o ciclo)
+    const resumos = await gerarResumos(op, sim, hora, avaliacoes, idx);
+
     // 5a) alerta de golpe por mensagem: quem age é a operação, nunca o leitor
     await alertarGolpes(op, sim, hora, idx, config);
 
@@ -123,7 +128,7 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
 
     const duracaoMs = Date.now() - t0;
     await op.from('ciclos').update({ situacao: 'concluido', duracao_ms: duracaoMs, titulos_avaliados: avaliacoes.length }).eq('id', cicloId);
-    return { hora, jaExecutado: false, titulosAvaliados: avaliacoes.length, enviados, duracaoMs, contratos: rc, validacao: rv, leitor, ...r };
+    return { hora, jaExecutado: false, titulosAvaliados: avaliacoes.length, enviados, duracaoMs, contratos: rc, validacao: rv, leitor, resumos, ...r };
   } catch (e) {
     await op.from('ciclos').update({ situacao: 'falhou', duracao_ms: Date.now() - t0 }).eq('id', cicloId);
     throw e;

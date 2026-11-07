@@ -27,6 +27,29 @@ function partes<T>(itens: T[], n = 200): T[][] {
   return out;
 }
 
+/**
+ * Insere sem upsert: com ON CONFLICT o Postgres também confere a política de LEITURA da tabela,
+ * e a conta do leitor não lê nada (de propósito). Duplicata (23505) = já gravado → ignora.
+ * O que já foi gravado neste processo nem é reenviado; se um lote bater em duplicata, regrava linha a linha.
+ */
+const gravados = new Map<string, Set<string>>();
+async function inserirTolerante(cliente: SupabaseClient, tabela: string, sim: string, linhas: Record<string, unknown>[], chaveDe: (l: Record<string, unknown>) => string) {
+  const feitos = gravados.get(`${sim}|${tabela}`) ?? new Set<string>();
+  gravados.set(`${sim}|${tabela}`, feitos);
+  const novas = linhas.filter((l) => !feitos.has(chaveDe(l)));
+  const marcar = (ls: Record<string, unknown>[]) => ls.forEach((l) => feitos.add(chaveDe(l)));
+  for (const lote of partes(novas)) {
+    const { error } = await cliente.from(tabela).insert(lote);
+    if (!error) { marcar(lote); continue; }
+    if (error.code !== '23505') throw new Error(`${tabela}: ${error.message}`);
+    for (const l of lote) {
+      const { error: e } = await cliente.from(tabela).insert(l);
+      if (e && e.code !== '23505') throw new Error(`${tabela}: ${e.message}`);
+      feitos.add(chaveDe(l));
+    }
+  }
+}
+
 export async function executarLeitor(cliente: SupabaseClient, sim: string, hora: HoraSimulada, idx: Indices, ia: ResultadoIA): Promise<ResultadoLeitor> {
   const horaTs = `${hora}:00`;
   const leituras = idx.leituras;
@@ -47,19 +70,16 @@ export async function executarLeitor(cliente: SupabaseClient, sim: string, hora:
     modelo_ia: l.modelo,
     hora_simulada: l.dataHora.replace(' ', 'T').slice(0, 19),
   }));
-  for (const p of partes(linhas)) {
-    const { error } = await cliente.from('mensagens_processadas').upsert(p, { onConflict: 'simulacao_id,comunicacao_id', ignoreDuplicates: true });
-    if (error) throw new Error(`mensagens_processadas: ${error.message}`);
-  }
+  await inserirTolerante(cliente, 'mensagens_processadas', sim, linhas, (l) => String(l.comunicacao_id));
   r.novas = leituras.length;
   r.emRevisao = leituras.filter((l) => l.revisaoHumana).length;
   r.comRisco = leituras.filter((l) => l.risco !== 'nenhum').length;
 
   // Log: uma linha por mensagem de risco ou em revisão (as rotineiras ficam só na tabela).
   const relevantes = leituras.filter((l) => l.risco !== 'nenhum' || l.revisaoHumana);
-  for (const p of partes(relevantes)) {
-    const { error } = await cliente.from('log_auditoria').upsert(
-      p.map((l) => ({
+  await inserirTolerante(
+    cliente, 'log_auditoria', sim,
+    relevantes.map((l) => ({
         simulacao_id: sim,
         data_hora_simulada: horaTs,
         ator_tipo: 'leitor_mensagens',
@@ -68,23 +88,19 @@ export async function executarLeitor(cliente: SupabaseClient, sim: string, hora:
         entidade_id: l.comunicacaoId,
         motivo: `${l.resumo} · confiança ${l.confianca.toFixed(2)}`.slice(0, 1000),
         chave: `leitor|${l.comunicacaoId}`,
-      })),
-      { onConflict: 'simulacao_id,chave', ignoreDuplicates: true },
-    );
-    if (error) throw new Error(`log_auditoria (leitor): ${error.message}`);
-  }
+    })),
+    (l) => String(l.chave),
+  );
   // Custo de IA visível (princípio 8): modelo, tokens e custo estimado de cada ciclo que chamou o proxy.
   if (ia.chamadas || ia.falhas) {
-    const { error } = await cliente.from('log_auditoria').upsert(
+    await inserirTolerante(cliente, 'log_auditoria', sim, [
       {
         simulacao_id: sim, data_hora_simulada: horaTs, ator_tipo: 'leitor_mensagens', acao: 'chamou o AI Proxy', entidade: 'ciclo', entidade_id: hora,
         motivo: `${ia.chamadas} chamadas, ${ia.falhas} falhas; ${ia.tokensEntrada} tokens de entrada, ${ia.tokensSaida} de saída; custo estimado US$ ${ia.custoUsd.toFixed(5)}`,
         tokens_entrada: ia.tokensEntrada, tokens_saida: ia.tokensSaida, custo_usd: ia.custoUsd,
         chave: `leitor-ia|${hora}`,
       },
-      { onConflict: 'simulacao_id,chave', ignoreDuplicates: true },
-    );
-    if (error) throw new Error(`log_auditoria (ia): ${error.message}`);
+    ], (l) => String(l.chave));
   }
   return r;
 }

@@ -37,7 +37,7 @@ const ACAO_POR_DESTINO: Record<string, string> = {
   RETIRADO: 'retirou do lote',
 };
 
-const ASSUNTO_POR_REGRA: Record<string, string> = {
+export const ASSUNTO_POR_REGRA: Record<string, string> = {
   R01: 'Possível pagamento em duplicidade',
   R02: 'Título já pago por outro caminho',
   R03: 'Divergência entre título e NF',
@@ -110,6 +110,7 @@ export async function executarOperacao(
       risco: a.decisao.risco,
       urgencia: a.urgencia,
       motivo: a.decisao.motivo,
+      resumo_ia: null, // decisão nova ou mudada: o resumo da IA é refeito (agents/resumos.ts)
       agente: 'agente_operacao',
       donos_pessoa_ids: a.decisao.notificar,
       hora_simulada: horaTs,
@@ -256,7 +257,9 @@ export async function executarOperacao(
 export async function fecharLotes(cliente: SupabaseClient, sim: string, hora: HoraSimulada, atuais: Map<string, DecisaoAtual>): Promise<number> {
   const horaTs = `${hora}:00`;
   const enviar = [...atuais.values()].filter(
-    (d) => d.fechamento.slice(0, 16).replace(' ', 'T') <= hora && !['RETIRADO', 'RECUSADO', 'ENVIADO'].includes(d.destino),
+    (d) => d.fechamento.slice(0, 16).replace(' ', 'T') <= hora && !['RETIRADO', 'RECUSADO', 'ENVIADO'].includes(d.destino) &&
+      // O que a política reserva a um humano nunca sai sem a aprovação dele (seção 5.1): fica de fora do lote.
+      !['CONFERIDO_AGUARDANDO_APROVADOR', 'AGUARDANDO_APROVACAO'].includes(d.destino),
   );
   if (enviar.length === 0) return 0;
   for (const parte of lotes(enviar.map((d) => d.titulo_id))) {

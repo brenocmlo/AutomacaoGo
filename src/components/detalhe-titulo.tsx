@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, CheckCircle2, Mail, MessageCircle, X, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Mail, MessageCircle, Sparkles, X, XCircle } from 'lucide-react';
 import { Badge, Card, SEVERIDADES, URGENCIAS, brl, destinoUi, horaBR } from '@/components/ui';
 import { AcoesTitulo } from '@/components/acoes-titulo';
 import type { DetalheTitulo } from '@/lib/painel/dados';
@@ -55,6 +55,17 @@ export function DetalhePainel({ det, fecharHref, simulacaoId, podeDecidir }: {
             </p>
           )}
         </section>
+
+        {det.resumoIa && (
+          <section className="rounded-lg border border-border bg-info-soft p-3 text-sm">
+            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+              <Sparkles className="size-3.5" />Resumo da IA
+              <span className="ml-auto font-mono text-[10px] font-normal normal-case tracking-normal" title="Modelo que escreveu o resumo">{det.resumoIa.modelo}</span>
+            </p>
+            <p>{det.resumoIa.texto}</p>
+            <p className="mt-1 text-[11px] text-muted">Texto de apoio gerado a partir do resultado das regras; a decisão acima não depende dele.</p>
+          </section>
+        )}
 
         <section>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Comparação entre sistemas</h3>

@@ -204,6 +204,49 @@ describe('funções de aprovação', () => {
   });
 });
 
+describe('administração decide (migração 8)', () => {
+  // Contas reais de admin têm alçada null (sem limite); a persona de teste nasce com 0, então iguala aqui.
+  beforeAll(async () => {
+    await db.query(`update public.perfis set alcada = null where id = $1`, [ids.admin]);
+  });
+  it('admin aprova solicitação acima de R$ 50 mil (aprovar / liberar um conferido aguardando aprovador)', async () => {
+    const sol = await solicitacao('T-adm60k', 60000, 'alcada_superior', ['PS03']);
+    expect((await aprovar('admin', sol)).rows[0]?.r).toBe('aprovada');
+    const d = await como<{ destino: string }>('admin', `select destino from public.decisoes where titulo_id = 'T-adm60k'`);
+    expect(d.rows[0]?.destino).toBe('APROVADO');
+    const l = await como<{ ator_tipo: string; ator_id: string }>('admin', `select ator_tipo, ator_id from public.log_auditoria where entidade_id = 'T-adm60k' and acao = 'aprovou'`);
+    expect(l.rows).toEqual([{ ator_tipo: 'humano', ator_id: ids.admin }]);
+  });
+  it('admin recusa com motivo, e o título sai do lote', async () => {
+    const sol = await solicitacao('T-admrec', 100, 'simples', ['aprovador']);
+    expect((await como('admin', `select public.recusar_solicitacao($1, ' ')`, [sol])).erro).toMatch(/obrigatório/);
+    expect((await como('admin', `select public.recusar_solicitacao($1, 'NF divergente')`, [sol])).erro).toBeNull();
+    const m = await como<{ tipo: string }>('admin', `select tipo from public.movimentos_lote where titulo_id = 'T-admrec'`);
+    expect(m.rows).toEqual([{ tipo: 'retirada' }]);
+  });
+  it('admin devolve ao lote um título retirado (libera)', async () => {
+    await decisao('T-admdev', 70000, 'RETIRADO');
+    await como('op', `insert into public.movimentos_lote (simulacao_id, titulo_id, lote, tipo, motivo, hora_simulada) values ($1, 'T-admdev', 'L1', 'retirada', 'R01', $2)`, [sim, H]);
+    expect((await como('admin', `select public.decisao_humana($1, 'T-admdev', 'devolver_ao_lote', 'falso positivo')`, [sim])).erro).toBeNull();
+    const d = await como<{ destino: string }>('admin', `select destino from public.decisoes where titulo_id = 'T-admdev'`);
+    expect(d.rows[0]?.destino).toBe('DEVOLVIDO');
+  });
+  it('aprovação dupla: admin vale como a segunda pessoa, mas a mesma pessoa não aprova duas vezes', async () => {
+    const sol = await solicitacao('T-admdupla', 8000, 'dupla', ['aprovador', 'PS01']);
+    expect((await aprovar('claudia', sol)).rows[0]?.r).toBe('pendente');
+    expect((await aprovar('admin', sol)).rows[0]?.r).toBe('aprovada');
+    const outra = await solicitacao('T-admdupla2', 8000, 'dupla', ['aprovador', 'PS01']);
+    expect((await aprovar('admin', outra)).rows[0]?.r).toBe('pendente');
+    expect((await aprovar('admin', outra)).erro).toMatch(/já se manifestou/);
+  });
+  it('segregação continua valendo para a administração: quem lançou não aprova', async () => {
+    await db.query(`update public.perfis set login_origem = 'u99' where id = $1`, [ids.admin]);
+    const sol = await solicitacao('T-admseg', 100, 'simples', ['aprovador'], 'u99');
+    expect((await aprovar('admin', sol)).erro).toMatch(/Segregação/);
+    await db.query(`update public.perfis set login_origem = null where id = $1`, [ids.admin]);
+  });
+});
+
 describe('notificações e alertas', () => {
   it('cada um vê só a própria caixa; agentes não leem caixas', async () => {
     await como('op', `insert into public.notificacoes (simulacao_id, pessoa_id, assunto, mensagem, chave, hora_simulada) values ($1, 'PS02', 'a', 'm', 'k1', $2), ($1, 'PS08', 'b', 'm', 'k1', $2)`, [sim, H]);

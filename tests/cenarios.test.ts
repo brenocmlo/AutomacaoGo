@@ -8,7 +8,7 @@ import { lerCsv } from '@/lib/data/csv';
 import type { AnaliseContratos } from '@/lib/contratos/tipos';
 import type { Indices } from '@/lib/data/indices';
 import { avaliarComIndices, type AvaliacaoTitulo } from '@/lib/rules/motor';
-import { montarDemo } from '../scripts/montar-demo';
+import { CENARIOS_PITCH, montarDemo } from '../scripts/montar-demo';
 
 /**
  * Roteiro da demo = teste do motor. Cada linha de data/cenarios/cenarios_esperados.csv
@@ -140,6 +140,39 @@ describe('legítimos não travam', () => {
     for (const e of esperados.filter((x) => x.titulo_id && !x.regras_esperadas)) {
       const av = porHora.get(e.hora_avaliacao!)!.avaliacoes.get(e.titulo_id!)!;
       expect(av.decisao.notificar, e.cenario_id).toEqual([]);
+    }
+  });
+});
+
+/**
+ * Base do pitch (npm run demo:montar): só C01, C05, C09 e C12, com o gabarito e os contratos filtrados
+ * para esses cenários. Montada em pasta temporária; não depende de data/demo.
+ */
+describe('base do pitch de 5 minutos', () => {
+  let dir: string;
+  let pitch: BaseEntrada;
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'goaudit-pitch-'));
+    montarDemo(path.join(RAIZ, 'data', 'base'), dir, CENARIOS, CENARIOS_PITCH);
+    pitch = carregarBase(dir);
+  });
+
+  it('o gabarito gravado na base só tem os 4 cenários', () => {
+    const g = lerCsv<Record<string, string>>(path.join(dir, 'cenarios_esperados.csv'));
+    expect([...new Set(g.map((l) => l.cenario_id))].sort()).toEqual(['C01', 'C05', 'C09', 'C12']);
+    expect(g.map((l) => l.titulo_id).filter(Boolean).sort()).toEqual(['TP900003', 'TP900004', 'TP900028', 'TP900040', 'TP900089', 'TP900092']);
+  });
+
+  it('só os contratos dos cenários escolhidos e nenhum título de fundo agendado', () => {
+    expect(pitch.contratos.map((c) => c.contrato_id)).toEqual(['CT-0135']);
+    const agendados = new Set(pitch.agenda.map((a) => a.titulo_id));
+    expect([...agendados].sort()).toEqual(['TP900003', 'TP900004', 'TP900028', 'TP900040', 'TP900089', 'TP900092']);
+  });
+
+  it('cada título do pitch sai com o destino do gabarito na hora do roteiro', () => {
+    for (const e of esperados.filter((x) => x.titulo_id && CENARIOS_PITCH.includes(x.cenario_id!))) {
+      const av = avaliarComIndices(pitch, config, e.hora_avaliacao!).avaliacoes.find((a) => a.tituloId === e.titulo_id);
+      expect(av?.decisao.destino, e.titulo_id).toBe(e.destino_esperado);
     }
   });
 });

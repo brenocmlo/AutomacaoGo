@@ -9,7 +9,7 @@ interface Conta {
   rotulo: string;
 }
 
-export function FormularioLogin({ contas }: { contas: Conta[] }) {
+export function FormularioLogin({ contas, agentes = [] }: { contas: Conta[]; agentes?: { nome: string; rotulo: string }[] }) {
   const [estado, acao, pendente] = useActionState<EstadoLogin, FormData>(entrar, { erro: null });
   const [email, setEmail] = useState('');
 
@@ -33,18 +33,33 @@ export function FormularioLogin({ contas }: { contas: Conta[] }) {
 
       {contas.length > 0 && (
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Contas de demonstração</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Pessoas · contas de demonstração</p>
           <ul className="grid gap-1">
             {contas.map((c) => (
               <li key={c.email}>
                 <button type="button" onClick={() => setEmail(c.email)}
                   className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-surface-2 ${email === c.email ? 'bg-accent-soft' : ''}`}>
                   <span className="truncate">{c.nome}</span>
-                  <span className="shrink-0 text-muted">{c.rotulo}</span>
+                  <span className="shrink-0 text-muted">Humano · {c.rotulo}</span>
                 </button>
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {agentes.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Agentes de IA</p>
+          <ul className="grid gap-1">
+            {agentes.map((a) => (
+              <li key={a.nome} className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs">
+                <span className="truncate">{a.nome}</span>
+                <span className="shrink-0 text-muted">Agente · {a.rotulo}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 px-2 text-xs text-muted">Trabalham no servidor, com conta própria. Não entram pelo painel.</p>
         </div>
       )}
     </div>

@@ -1,15 +1,25 @@
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { carregarConfig, raizProjeto } from '@/lib/config/config';
-import { carregarBase } from '@/lib/data/base';
+import { carregarBase, type BaseEntrada } from '@/lib/data/base';
 import { Indices } from '@/lib/data/indices';
 import type { Comunicacao } from '@/lib/data/tipos';
 import { lerMensagem } from '@/lib/mensagens/leitor';
 import { avaliarAgenda } from '@/lib/rules/motor';
+import { montarDemo } from '../scripts/montar-demo';
 
-const base = carregarBase(path.join(raizProjeto(), 'data', 'demo'));
-const idx = new Indices(base);
+// A base de data/demo é a do pitch (poucos cenários): aqui os testes montam, em pasta temporária, a base com TODOS os cenários.
+let base: BaseEntrada;
+let idx: Indices;
 const config = carregarConfig();
+beforeAll(() => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'goaudit-leitor-'));
+  montarDemo(path.join(raizProjeto(), 'data', 'base'), dir, path.join(raizProjeto(), 'data', 'cenarios'));
+  base = carregarBase(dir);
+  idx = new Indices(base);
+});
 
 const msg = (o: Partial<Comunicacao>): Comunicacao =>
   ({ comunicacao_id: 'T1', data_hora: '2026-10-30 10:00:00', canal: 'email', remetente: 'x@y.com', nome_remetente: '', destinatario: 'contasapagar@gogroup.com.br', assunto: '', texto: '', anexos: '', ...o }) as Comunicacao;

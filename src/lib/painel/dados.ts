@@ -7,6 +7,7 @@ import { deMs, fechamentoDoLote, minutosEntre, paraMs, type HoraSimulada } from 
 import { avaliarComIndices, type AvaliacaoTitulo } from '@/lib/rules/motor';
 import type { Destino } from '@/lib/rules/destino';
 import { todas } from '@/lib/agents/ciclo';
+import { MODELO_RESUMO } from '@/lib/ai/proxy';
 import { simulacaoAtual, type Simulacao } from '@/lib/simulacao/servico';
 import { supabaseConfigurado } from '@/lib/supabase/config';
 import { supabaseServidor, usuarioAtual, type Usuario } from '@/lib/supabase/servidor';
@@ -234,24 +235,29 @@ export interface DetalheTitulo {
   log: { log_id: number; data_hora_simulada: string | null; ator_tipo: string; ator_papel: string | null; acao: string; motivo: string | null }[];
   solicitacao: { id: string; tipo: string; valor: number; aprovadores_exigidos: string[]; aprovacoes: number } | null;
   retirado: boolean;
+  /** Resumo curto da IA (decisões não triviais); null se não houve (IA desligada, falha ou decisão trivial). */
+  resumoIa: { texto: string; modelo: string } | null;
 }
 
 /** Log e solicitação do título, lidos com a sessão do usuário (RLS). */
-async function dadosDoBanco(p: Painel, tituloId: string): Promise<Pick<DetalheTitulo, 'log' | 'solicitacao' | 'retirado'>> {
-  if (!p.sim) return { log: [], solicitacao: null, retirado: false };
+async function dadosDoBanco(p: Painel, tituloId: string): Promise<Pick<DetalheTitulo, 'log' | 'solicitacao' | 'retirado' | 'resumoIa'>> {
+  if (!p.sim) return { log: [], solicitacao: null, retirado: false, resumoIa: null };
   const cliente = await supabaseServidor();
-  const [log, sol, mov] = await Promise.all([
+  const [log, sol, mov, dec] = await Promise.all([
     cliente.from('log_auditoria').select('log_id, data_hora_simulada, ator_tipo, ator_papel, acao, motivo')
       .eq('simulacao_id', p.sim.id).eq('entidade', 'titulo').eq('entidade_id', tituloId).order('log_id', { ascending: false }).limit(30),
     cliente.from('solicitacoes_aprovacao').select('id, tipo, valor, aprovadores_exigidos, aprovacoes(id)')
       .eq('simulacao_id', p.sim.id).eq('titulo_id', tituloId).eq('situacao', 'pendente').maybeSingle(),
     cliente.from('movimentos_lote').select('tipo').eq('simulacao_id', p.sim.id).eq('titulo_id', tituloId).order('id', { ascending: false }).limit(1).maybeSingle(),
+    cliente.from('decisoes').select('resumo_ia').eq('simulacao_id', p.sim.id).eq('titulo_id', tituloId).maybeSingle(),
   ]);
+  const resumo = (dec.data as { resumo_ia: string | null } | null)?.resumo_ia;
   const s = sol.data as { id: string; tipo: string; valor: number; aprovadores_exigidos: string[]; aprovacoes: unknown[] | null } | null;
   return {
     log: log.data ?? [],
     solicitacao: s ? { id: s.id, tipo: s.tipo, valor: Number(s.valor), aprovadores_exigidos: s.aprovadores_exigidos, aprovacoes: s.aprovacoes?.length ?? 0 } : null,
     retirado: mov.data?.tipo === 'retirada',
+    resumoIa: resumo ? { texto: resumo, modelo: MODELO_RESUMO } : null,
   };
 }
 

@@ -16,6 +16,15 @@ export default function Login() {
       }))
     : [];
 
+  // Agentes de IA: contas de serviço do servidor. Aparecem só para distinguir de pessoas; não entram pelo painel.
+  const agentes = configurado
+    ? [
+        { nome: 'Agente de operação', rotulo: 'Executa os destinos' },
+        { nome: 'Agente de validação', rotulo: 'Revisa a operação' },
+        { nome: 'Leitor de mensagens', rotulo: 'Só lê, não age' },
+      ]
+    : [];
+
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm p-6">
@@ -27,7 +36,7 @@ export default function Login() {
           </div>
         </div>
         {configurado ? (
-          <FormularioLogin contas={contas} />
+          <FormularioLogin contas={contas} agentes={agentes} />
         ) : (
           <div className="space-y-3 text-sm">
             <p>O Supabase ainda não está configurado, então o painel roda em <strong>modo local</strong>, sem login.</p>

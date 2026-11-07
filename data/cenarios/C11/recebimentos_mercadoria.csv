@@ -1,2 +1,2 @@
 recebimento_id,data_hora_recebimento,local_recebimento,cnpj_destinatario,chave_acesso,numero_nf,cnpj_emitente,oc_id,descricao_item,quantidade_recebida,unidade,volumes,conferente,situacao,observacao,entrada_estoque
-RC900034,2026-10-22 10:00:00,CD1 - Maracanaú/CE,41208533000302,23261014343478000129550010009000331273613279,900033,14343478000129,OC-90032,Item do cenário,1000,un,10,conf_cd1_01,conferido,,2026-10-22 14:00:00
+RC900034,2026-10-22 10:00:00,CD1 - Maracanaú/CE,41208533000302,23261090331547000162550010009000331273613270,900033,90331547000162,OC-90032,Item do cenário,1000,un,10,conf_cd1_01,conferido,,2026-10-22 14:00:00

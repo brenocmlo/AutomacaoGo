@@ -6,10 +6,12 @@ MVP do desafio **Pagamentos** do GoHacks Talent 2026: a cada hora simulada, conf
 
 ```bash
 npm install
-npm test                 # normalizadores, ligação da base, cenários C01–C29, critérios de contratos e migrações/RLS offline (PGlite)
+npm test                 # normalizadores, ligação da base, cenários plantados, resumo da IA, critérios de contratos e migrações/RLS offline (PGlite)
 npm run cenarios:gerar   # regenera data/cenarios a partir da base
-npm run demo:montar      # data/base + data/cenarios → data/demo (enxuta: só os cenários; --completa mantém a base inteira)
-npm run demo:aquecer     # pré-aquece a leitura de mensagens por IA (cache em disco) antes da apresentação
+npm run demo:montar      # data/base + data/cenarios → data/demo: base do PITCH de 5 min (só C01, C05, C09 e C12)
+npm run demo:montar -- --todos-cenarios   # todos os cenários plantados
+npm run demo:montar -- --completa         # base inteira (títulos de fundo) com todos os cenários
+npm run demo:aquecer     # pré-aquece a leitura de mensagens e os resumos da IA (cache em disco) antes da apresentação
 npm run relatorio        # motor sobre a base original: destinos, regras e títulos não ligados
 ```
 
@@ -23,7 +25,7 @@ npm run relatorio        # motor sobre a base original: destinos, regras e títu
 
 ## Demonstração
 
-O passo a passo para quem apresenta (horários do relógio, contas por papel, cenários C01–C29, falas, checklist e plano B) está em [docs/roteiro-demo.md](docs/roteiro-demo.md). A base da demo (`data/demo`) é enxuta: 28 títulos, um exemplo de cada caso. C05 usa um WhatsApp **fictício** (a base original só tem e-mails). "Nova simulação" abre uma simulação nova (o log e as contas ficam) em poucos segundos.
+O pitch tem **5 minutos** e conta três histórias: **rotina** (pagamentos que o sistema libera ou deixa conferidos, com a variação contra o histórico), **duplicidade tratada pela IA** (C01: a regra retira a cópia e a IA escreve o resumo em linguagem de negócio) e **golpe por mensagem** (C05: WhatsApp pedindo troca de conta mais alteração cadastral sem confirmação, com decisão humana). O passo a passo (tempos, horários do relógio, contas por papel, IDs dos títulos, falas, checklist e plano B) está em [docs/roteiro-demo.md](docs/roteiro-demo.md). A base da demo (`data/demo`) tem 6 títulos nos lotes e o gabarito só desses cenários (`cenarios_esperados.csv`). C05 usa um WhatsApp **fictício** (a base original só tem e-mails). A administração também aprova, recusa e devolve ao lote (migração 8). "Nova simulação" abre uma simulação nova (o log e as contas ficam) em poucos segundos.
 
 ## Estrutura
 
@@ -70,6 +72,7 @@ tests/           Vitest; tests/rls roda contra o Supabase real
 - **Título conferido acima da alçada do agente continua no lote** se ninguém aprovar, que é o comportamento atual (o tesoureiro assina). Só R08 e R09 retiram o título quando a margem antes do fechamento acaba.
 - **Chegada por carimbo de tempo:** cada arquivo é filtrado pela hora simulada. Extratos, que só têm data, ficam visíveis a partir de `chegada.extrato_hora_disponivel`.
 - **Duplicidade:** só a cópia (lançada depois) é retirada, e o original segue. **Fracionamento** soma uma vez por parcela, porque cópias da mesma parcela já são caso de R01.
+- **Resumo da IA (seção 6.3, item 4):** depois de gravar as decisões, o agente de operação pede ao AI Proxy (`mimo-v2.6-flash`) um resumo de até ~60 palavras (problema, valor, regra, ação recomendada) de cada retirada ou aguardando aprovação, gravado em `decisoes.resumo_ia` e mostrado no detalhe do título. A IA recebe só o dossiê estruturado das regras, nunca o texto de uma mensagem. Há cache por conteúdo (só título novo ou decisão mudada chama a IA), e falha ou timeout não travam o ciclo. Tokens e custo ficam no log (`resumo-ia|<hora>`).
 - **R13:** usuário desligado retira o título. Admissão recente só gera alerta, para não travar os títulos legítimos dos analistas novos.
 - **R14 (leitor de mensagens):** troca de conta ou segunda via de canal fora do cadastro retira os títulos do fornecedor; pagamento urgente fora do processo e phishing só alertam. O leitor roda sem IA (regras e regex) e a IA refina o tipo: ela nunca baixa um risco que as regras viram, e sozinha não promove mensagem de remetente do cadastro a phishing. O texto da mensagem vai ao modelo como dado delimitado e não vai para o banco. Tokens e custo de cada ciclo ficam no log (`leitor-ia|<hora>`).
 

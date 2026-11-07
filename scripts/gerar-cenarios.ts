@@ -105,7 +105,7 @@ function ocsDoFornecedor(f: Fornecedor): PedidoCompra[] {
   return base.pedidos.filter((o) => raizCnpj(o.cnpj_fornecedor) === raizCnpj(f.cnpj));
 }
 
-function escolherFornecedor(criterio: { categorias: string[]; forma?: string; valorMax?: number; medianaMax?: number; comContrato?: boolean }): Fornecedor {
+function escolherFornecedor(criterio: { categorias: string[]; forma?: string; valorMax?: number; medianaMax?: number; medianaMin?: number; comContrato?: boolean }): Fornecedor {
   const cands = base.fornecedores
     .filter((f) => criterio.categorias.includes(f.categoria) && !usados.has(f.fornecedor_id))
     .filter((f) => !criterio.forma || f.forma_pagamento_padrao === criterio.forma)
@@ -119,6 +119,7 @@ function escolherFornecedor(criterio: { categorias: string[]; forma?: string; va
       const m = mediana(h)!;
       if (criterio.valorMax && m * 5 < criterio.valorMax) return false;
       if (criterio.medianaMax && m > criterio.medianaMax) return false;
+      if (criterio.medianaMin && m < criterio.medianaMin) return false;
       return true;
     })
     .sort((a, b) => a.fornecedor_id.localeCompare(b.fornecedor_id));
@@ -387,7 +388,7 @@ cenario('C08', 'NF 4% acima da OC de embalagem', (add, esp) => {
 
 // C09 · NF 1,5% acima da OC (dentro da tolerância)
 cenario('C09', 'NF 1,5% acima da OC (dentro da tolerância)', (add, esp) => {
-  const f = escolherFornecedor({ categorias: ['embalagens', 'insumos_capa'], forma: 'ted', valorMax: 4200 });
+  const f = escolherFornecedor({ categorias: ['embalagens', 'insumos_capa'], forma: 'ted', valorMax: 4200, medianaMin: 3300, medianaMax: 4800 });
   const oc = valorUnico(f, 4000);
   const nf = centavos(oc * 1.015);
   const { t } = pacoteTed(add, f, nf, { valorNf: nf, valorOc: oc });
