@@ -20,8 +20,9 @@ npm run relatorio        # motor sobre a base original: destinos, regras e títu
 1. Crie o projeto e copie `.env.example` para `.env.local`, preenchendo as chaves e as senhas de demo.
 2. `npx supabase login`, depois `npm run db:link -- --project-ref <ref>` e `npm run db:push`.
 3. No painel: **Authentication → Hooks → Customize Access Token** → função `public.custom_access_token_hook`.
-4. `npm run seed:usuarios` cria as contas de demonstração (e-mails `@example.com`): aprovador simples (Cláudia Ferraz), coordenadora PS01 (Renata Paiva), diretora PS03 (Helena Duarte), dois gestores de contrato com papel consulta (PS10 Tiago Lins, PS11 Paula Viana), admin e os 3 agentes.
-5. `npm run test:rls` roda a bateria de RLS contra o projeto real.
+4. `npm run seed:usuarios` cria as contas de demonstração (e-mails `@example.com`): uma conta por função humana: aprovador (Cláudia Ferraz), consulta (Tiago Lins, PS10) e admin (que decide no lugar de PS01/PS03 e vê as caixas de todos), mais os 3 agentes.
+5. Migração 9 (gerador de eventos), se o `db:push` não for usado: cole `supabase/.temp/aplicar_migracao_9.sql` no SQL Editor; depois preencha `AGENTE_GERADOR_EMAIL/SENHA` e rode `npm run seed:usuarios` de novo.
+6. `npm run test:rls` roda a bateria de RLS contra o projeto real.
 
 ## Demonstração
 
@@ -48,7 +49,8 @@ src/
     clock/       relógio simulado, calendário bancário, urgência
     rules/       R01–R11 e R13, uma regra por arquivo; destino.ts (seção 5.1); motor.ts
     contratos/   vínculo título × contrato, competência, valor esperado e desvios D01–D10 (substitui a R12)
-    agents/      agente de operação (destinos, notificações, contratos) e ciclo do relógio
+    agents/      agente de operação (destinos, notificações, contratos), gerador de eventos e ciclo do relógio
+    geracao/     gerador de eventos ao vivo: planejamento por hora, modelos de texto, injeção na base e helpers de formato (também usados por scripts/gerar-cenarios.ts)
 scripts/         gerar cenários, montar demo, relatório, carga de usuários
 tests/           Vitest; tests/rls roda contra o Supabase real
 ```
@@ -90,6 +92,13 @@ A antiga R12 (variação mensal) foi substituída pelo módulo `src/lib/contrato
 - **Índices de reajuste**: a base não traz; `data/complementos/indices_reajuste.csv` é fictício.
 - O cenário C13 (aluguel acima do contrato) da v3 é coberto por C19.
 
+
+## Gerador de eventos (a simulação ao vivo)
+
+- A cada hora simulada, o agente `agente_gerador` (`src/lib/agents/gerador.ts`) pode fazer chegar títulos novos de fornecedores: **rotina** (valor dentro de ±15% do histórico; o motor libera ou deixa conferido) e **duplicidade** (relança um título gerado antes com a NF digitada de outro jeito; a R01 retira a cópia). Só gera isso: não há mensagens nem IA no gerador, os textos são fixos.
+- As linhas vão para `eventos_gerados` (migração 9, `supabase/.temp/aplicar_migracao_9.sql`) e entram na base por `baseComEventos` (`src/lib/geracao/injetar.ts`), a mesma para o ciclo e o painel. Chave única por simulação e hora: reexecutar o ciclo não duplica. IDs `TPG...`, `OC-G...`, `EVG...`; uma linha de log por evento (ator `gerador_eventos`).
+- Volume baixo (cerca de 3 títulos por dia útil, 0 a 3 por hora), de segunda a sexta, das 9h às 18h; a hora inicial e os cenários plantados ficam intactos.
+- Contas: `AGENTE_GERADOR_EMAIL/SENHA` no `.env` e `npm run seed:usuarios`. **Para desligar:** `GOAUDIT_GERADOR=desligado`. Sem a migração ou a conta, o ciclo segue só com o CSV. Não existe no modo local.
 
 ## Equipe
 

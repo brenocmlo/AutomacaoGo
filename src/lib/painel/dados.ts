@@ -7,6 +7,10 @@ import { deMs, fechamentoDoLote, minutosEntre, paraMs, type HoraSimulada } from 
 import { avaliarComIndices, type AvaliacaoTitulo } from '@/lib/rules/motor';
 import type { Destino } from '@/lib/rules/destino';
 import { todas } from '@/lib/agents/ciclo';
+import { lerEventosGerados } from '@/lib/agents/gerador';
+import type { BaseEntrada } from '@/lib/data/base';
+import { baseComEventos, versaoEventos } from '@/lib/geracao/injetar';
+import type { EventoGerado } from '@/lib/geracao/tipos';
 import { MODELO_RESUMO } from '@/lib/ai/proxy';
 import { simulacaoAtual, type Simulacao } from '@/lib/simulacao/servico';
 import { supabaseConfigurado } from '@/lib/supabase/config';
@@ -33,20 +37,24 @@ export interface Painel {
   contratos: AnaliseContratos;
   sim: Simulacao | null;
   usuario: Usuario | null;
+  /** Base de CSV + eventos gerados até a hora (a mesma que o ciclo usa). */
+  base: BaseEntrada;
+  /** Eventos que o gerador criou nesta simulação (vazio sem Supabase ou sem a migração 9). */
+  eventosGerados: EventoGerado[];
 }
 
 /** Visão consolidada para as telas. */
 export async function painel(): Promise<Painel> {
   if (!supabaseConfigurado()) {
     const hora = limitarHora((await cookies()).get(COOKIE_HORA)?.value);
-    return { hora, ...avaliar(hora), sim: null, usuario: null };
+    return { hora, ...avaliar(hora), sim: null, usuario: null, eventosGerados: [] };
   }
   const cliente = await supabaseServidor();
   const [sim, usuario] = await Promise.all([simulacaoAtual(cliente), usuarioAtual()]);
   const hora = sim?.hora ?? periodo().inicio;
-  const base = avaliar(hora);
-  if (!sim) return { hora, ...base, sim, usuario };
-
+  if (!sim) return { hora, ...avaliar(hora), sim, usuario, eventosGerados: [] };
+  const eventosGerados = await lerEventosGerados(cliente, sim.id);
+  const base = avaliar(hora, eventosGerados);
   const decisoes = await todas<{ titulo_id: string; destino: string; motivo: string | null }>((de, ate) =>
     cliente.from('decisoes').select('titulo_id, destino, motivo').eq('simulacao_id', sim.id).range(de, ate),
   );
@@ -56,10 +64,10 @@ export async function painel(): Promise<Painel> {
     if (!d || d.destino === a.decisao.destino) return a;
     return { ...a, decisao: { ...a.decisao, destino: d.destino as Destino, motivo: d.motivo ?? a.decisao.motivo } };
   });
-  return { hora, avaliacoes, idx: base.idx, contratos: base.contratos, sim, usuario };
+  return { hora, avaliacoes, idx: base.idx, contratos: base.contratos, base: base.base, sim, usuario, eventosGerados };
 }
 
-const avaliacoesCache = new Map<string, { avaliacoes: AvaliacaoTitulo[]; idx: Indices; contratos: AnaliseContratos }>();
+const avaliacoesCache = new Map<string, { avaliacoes: AvaliacaoTitulo[]; idx: Indices; contratos: AnaliseContratos; base: BaseEntrada }>();
 
 export function periodo(): { inicio: HoraSimulada; fim: HoraSimulada } {
   const p = contexto().base.politicas.periodo;
@@ -78,13 +86,16 @@ export async function horaSimulada(): Promise<HoraSimulada> {
   return limitarHora((await cookies()).get(COOKIE_HORA)?.value);
 }
 
-export function avaliar(hora: HoraSimulada) {
-  const hit = avaliacoesCache.get(hora);
+/** Avaliação da base na hora, com os eventos gerados até lá. Cache por hora + versão dos eventos. */
+export function avaliar(hora: HoraSimulada, eventos: EventoGerado[] = []) {
+  const chave = `${hora}|${versaoEventos(eventos.filter((e) => paraMs(e.hora) <= paraMs(hora)))}`;
+  const hit = avaliacoesCache.get(chave);
   if (hit) return hit;
-  const { base, config } = contexto();
-  const r = avaliarComIndices(base, config, hora);
+  const { base: csv, config } = contexto();
+  const base = baseComEventos(csv, eventos, hora);
+  const r = { ...avaliarComIndices(base, config, hora), base };
   if (avaliacoesCache.size > 24) avaliacoesCache.delete(avaliacoesCache.keys().next().value!);
-  avaliacoesCache.set(hora, r);
+  avaliacoesCache.set(chave, r);
   return r;
 }
 
@@ -117,7 +128,7 @@ export const TODOS_DESTINOS: DestinoPainel[] = [
   'APROVADO', 'RECUSADO', 'DEVOLVIDO', 'ENVIADO',
 ];
 
-export function resumo({ hora, avaliacoes }: Painel): Resumo {
+export function resumo({ hora, avaliacoes, base }: Painel): Resumo {
   const porDestino = Object.fromEntries(TODOS_DESTINOS.map((d) => [d, { qtd: 0, valor: 0 }])) as Resumo['porDestino'];
   for (const a of avaliacoes) {
     const d = a.decisao.destino as DestinoPainel;
@@ -125,7 +136,6 @@ export function resumo({ hora, avaliacoes }: Painel): Resumo {
     porDestino[d].valor += a.valor;
   }
 
-  const { base } = contexto();
   let enviadosQtd = 0;
   let enviadosValor = 0;
   const lotes = new Map<string, FechamentoLote>();
@@ -209,8 +219,8 @@ export function fila({ avaliacoes, idx }: Painel, f: FiltrosFila): AvaliacaoTitu
   });
 }
 
-export function nomeFornecedor(hora: HoraSimulada, fornecedorId: string): string {
-  const f = avaliar(hora).idx.fornecedorPorId.get(fornecedorId);
+export function nomeFornecedor(_hora: HoraSimulada, fornecedorId: string): string {
+  const f = contexto().base.fornecedores.find((x) => x.fornecedor_id === fornecedorId);
   return f?.nome_fantasia || f?.razao_social || fornecedorId;
 }
 

@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Paginacao, paginar } from '@/components/paginacao';
 import { Badge, Card, CardTitulo, PAPEIS, brl } from '@/components/ui';
 import { contexto } from '@/lib/painel/dados';
 import { supabaseConfigurado } from '@/lib/supabase/config';
@@ -30,6 +31,7 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
   const supa = await supabaseServidor();
   const { data } = await supa.from('perfis').select('id, nome, email, papel, alcada, pessoa_id, ativo').order('papel').order('nome');
   const perfis = ((data ?? []) as (Omit<Perfil, 'alcada'> & { alcada: number | string | null })[]).map((p) => ({ ...p, alcada: p.alcada == null ? null : Number(p.alcada) }));
+  const pag = paginar(perfis, sp.pagina);
   const pessoas = contexto().base.politicas.pessoas;
   const ocupadas = new Set(perfis.map((p) => p.pessoa_id).filter(Boolean));
   const livres = pessoas.filter((p) => !ocupadas.has(p.pessoaId));
@@ -98,7 +100,7 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
               </tr>
             </thead>
             <tbody>
-              {perfis.map((p) => (
+              {pag.itens.map((p) => (
                 <tr key={p.id} className="border-t border-border">
                   <td className="px-3 py-2">{p.nome}</td>
                   <td className="px-3 py-2 text-muted">{p.email}</td>
@@ -121,6 +123,7 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
             </tbody>
           </table>
         </div>
+        <Paginacao basePath="/equipe" params={sp} {...pag} />
       </Card>
     </div>
   );

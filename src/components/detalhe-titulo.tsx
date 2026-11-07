@@ -7,7 +7,7 @@ import { NOME_DESVIO } from '@/lib/contratos/tipos';
 
 const ATORES: Record<string, string> = {
   motor_regras: 'Motor de regras', agente_operacao: 'Agente de operação', agente_validacao: 'Agente de validação',
-  leitor_mensagens: 'Leitor de mensagens', humano: 'Humano', sistema: 'Sistema',
+  leitor_mensagens: 'Leitor de mensagens', gerador_eventos: 'Gerador de eventos', humano: 'Humano', sistema: 'Sistema',
 };
 
 const NOMES_REGRAS: Record<string, string> = {
@@ -103,7 +103,7 @@ export function DetalhePainel({ det, fecharHref, simulacaoId, podeDecidir }: {
                 {r.evidencias.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {r.evidencias.map((e) =>
-                      /^TP\d+$/.test(e) && e !== av.tituloId ? (
+                      /^TPG?\d+$/.test(e) && e !== av.tituloId ? (
                         <Link key={e} href={`/auditoria?t=${e}`} className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-accent hover:underline">{e}</Link>
                       ) : (
                         <span key={e} className="max-w-full truncate rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-muted" title={e}>{e}</span>

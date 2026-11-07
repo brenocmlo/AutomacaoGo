@@ -11,7 +11,7 @@ A base da demo (`data/demo`) é a **base do pitch**: 6 títulos nos lotes, que c
 | 0:00 a 0:20 | Abertura | admin | 02/11 08:00 | Visão geral |
 | 0:20 a 1:10 | **Rotina**: o que o sistema libera ou deixa conferido | admin | 02/11 08:00 | Rotina e variações, Fila de auditoria |
 | 1:10 a 2:55 | **Duplicidade tratada pela IA** (C01) | admin | 02/11 08:00 | Fila de auditoria |
-| 2:55 a 4:40 | **Golpe por mensagem** (C05) | admin, depois Renata | 02/11 14:00 e 15:00 | Fila de auditoria, Log e gargalos, Alertas e caixa |
+| 2:55 a 4:40 | **Golpe por mensagem** (C05) | admin | 02/11 14:00 e 15:00 | Fila de auditoria, Log e gargalos, Alertas e caixa |
 | 4:40 a 5:00 | Fechamento: placar e custo de IA | admin | 02/11 15:00 | Visão geral |
 
 ## 2. Contas
@@ -20,13 +20,12 @@ Senha de todas: `DEMO_SENHA`. Os e-mails de pessoas são fictícios (`@example.c
 
 | Papel | Conta | No pitch |
 | --- | --- | --- |
-| Administração | `admin@gogroup.com` | Conduz tudo e decide. Vê as notificações de quem não tem conta (PS02, PS08). |
+| Administração | `admin@gogroup.com` | Conduz tudo e decide. Representa a coordenadora (PS01) e a diretora (PS03): aprova no lugar delas, inclusive como segunda pessoa da aprovação dupla. Vê as notificações e alertas de todas as pessoas (PS01, PS02, PS03, PS08...). |
 | Aprovador (até R$ 50 mil) | `claudia.ferraz@example.com` (Cláudia Ferraz) | Reserva: aprova o que cabe na alçada dela. |
-| Coordenadora de contas a pagar (PS01) | `renata.paiva@example.com` (Renata Paiva) | Recebe o aviso de duplicidade e de troca de conta (C01 e C05). |
-| Diretora financeira (PS03) | `helena.duarte@example.com` (Helena Duarte) | Reserva: seria quem aprova o aluguel de R$ 73.800 (C12). |
 | Gestor de contrato, consulta (PS10) | `tiago.lins@example.com` (Tiago Lins) | Não entra no pitch. |
-| Gestora de contrato, consulta (PS11) | `paula.viana@example.com` (Paula Viana) | Não entra no pitch. |
 | Agente de operação, de validação e leitor | `agente.operacao@`, `agente.validacao@`, `agente.leitor@example.com` | Contas técnicas dos agentes. Não entram no painel; aparecem no log como atores separados. |
+
+PS01 (coordenadora), PS03 (diretora), PS08 e as demais continuam sendo as **pessoas da política**: são elas que recebem os avisos e cuja aprovação a regra exige, mas não têm login na demo. O admin as representa; as caixas e alertas delas aparecem no painel do admin.
 
 ## 3. Roteiro
 
@@ -63,7 +62,7 @@ Clicar **Nova simulação** antes de começar (deixe pronto). Na **Visão geral*
 2. **Clique:** **+1h** (15:00). Às 14:20 chegou um WhatsApp (`WA990093`) de um número novo pedindo novos dados bancários e, às 14:45, o cadastro foi alterado sem confirmação. **O canal WhatsApp é fictício** (a base original só tem e-mails).
 3. Os dois títulos viram **Retirado** (R07, R09 e R14). Vale para **todos** os títulos do fornecedor. Abrir `TP900089`: **Resumo da IA**, **Mensagens relacionadas** com o selo "canal não oficial".
 4. Menu **Log e gargalos**, procurar "classificou mensagem de risco": o **Leitor de mensagens** (conta própria, sem permissão de agir) classificou como troca de dados bancários, risco crítico, com os sinais de pedido de troca de conta, telefone novo citado e remetente fora do cadastro, e a IA refinou o tipo. Quem retirou os títulos foi o **Agente de operação**, outra conta.
-5. **Decisão humana**: no `TP900089`, **Manter retido** como admin, com a justificativa "Confirmar pelo telefone do cadastro antes de qualquer pagamento". Fica registrado no log. (Se sobrar tempo: entrar como Renata Paiva em **Alertas e caixa** e mostrar o aviso de PS01. O aviso de PS08 aparece na caixa do admin.)
+5. **Decisão humana**: no `TP900089`, **Manter retido** como admin, com a justificativa "Confirmar pelo telefone do cadastro antes de qualquer pagamento". Fica registrado no log. (Se sobrar tempo: em **Alertas e caixa**, como admin, mostrar os avisos de PS01 e PS08, que o admin enxerga por representar essas pessoas.)
 
 > "Cada fato sozinho passaria: uma mensagem de um número novo, e depois uma alteração de cadastro. O GoAudit liga os dois e tira os títulos do lote antes de o dinheiro ir para a conta errada. A conta que lê a mensagem não pode liberar nem retirar nada, e a decisão final é de uma pessoa."
 
@@ -80,7 +79,7 @@ Voltar à **Visão geral**.
 ## 4. Checklist (15 minutos antes)
 
 - [ ] `.env.local` preenchido: `DEMO_SENHA`, `AI_PROXY_API_KEY`, chaves do Supabase, contas dos agentes e `ADMIN_EMAIL`.
-- [ ] Supabase no ar, migrações aplicadas (inclusive a 8, que deixa o admin aprovar: `supabase/.temp/aplicar_migracao_8.sql`) e contas criadas (`npm run seed:usuarios`).
+- [ ] Supabase no ar, migrações aplicadas (inclusive a 8, que deixa o admin aprovar: `supabase/.temp/aplicar_migracao_8.sql`, e a 9, do gerador: `supabase/.temp/aplicar_migracao_9.sql`) e contas criadas (`npm run seed:usuarios`).
 - [ ] `npm run demo:montar` (monta a base do pitch). O topo da tela mostra "Base original" se isso faltou.
 - [ ] `npm run demo:aquecer`: guarda em disco a leitura da mensagem (1) e os 3 resumos da IA. Sem isso, o primeiro ciclo espera a IA (alguns segundos por resumo).
 - [ ] `npm run dev` rodando e `http://localhost:3000/login` aberto.
@@ -94,12 +93,19 @@ Voltar à **Visão geral**.
 | **A IA falhar ou estiver lenta** | O ciclo segue pelas regras: o título é retirado do mesmo jeito, mas fica sem o bloco "Resumo da IA", e a mensagem vai para revisão humana. Para não esperar tentativas, ponha `GOAUDIT_IA=desligada` no `.env.local`, reinicie o `npm run dev` e clique **Nova simulação**. Fala: "A IA explica; sem ela, a proteção continua." |
 | **O Realtime falhar** (a tela não atualiza) | Aperte F5 depois de cada avanço do relógio. Os dados estão no banco. |
 | **A tela travar durante um +6h** | Aguarde. Cada ciclo é idempotente. Se o navegador der erro, recarregue e clique **+1h**: a hora já feita é pulada. |
-| **O botão Aprovar der erro de permissão** | A migração 8 não foi aplicada. Cole `supabase/.temp/aplicar_migracao_8.sql` no SQL Editor do Supabase, saia e entre de novo como admin. Enquanto isso, entre como Helena Duarte para aprovar o `TP900040`. |
+| **O botão Aprovar der erro de permissão** | A migração 8 não foi aplicada. Cole `supabase/.temp/aplicar_migracao_8.sql` no SQL Editor do Supabase, saia e entre de novo como admin. Sem a migração, o admin não aprova; entre como Cláudia Ferraz só para o que couber na alçada dela (o `TP900040` exige o admin). |
 | **O Supabase cair** | O painel entra em "Modo local": decisões recalculadas pelo servidor, sem login, aprovações nem placar. Serve para mostrar as histórias na Fila de auditoria. Tire as chaves do `.env.local` e reinicie. |
 | **Uma conta não entra** | Entre como admin: o menu **Equipe** cria ou refaz um acesso na hora. |
 | **A simulação ficou numa hora errada** | **Nova simulação** e refaça só a parte que precisa. |
 
-## 6. Outras bases
+## 6. Gerador de eventos (a simulação viva)
+
+- Com a migração 9 e a conta `AGENTE_GERADOR_*`, cada hora que o relógio avança pode trazer títulos novos: só **rotina** (liberados pelo motor) e **duplicidade** (cópia retirada pela R01). Não gera mensagens nem golpes.
+- Depois do bloco do golpe (02/11 15:00), clique **+6h** ou **+1 dia** para mostrar a fila se enchendo; no log o ator é "Gerador de eventos". Os IDs são `TPG...`.
+- Em 02/11 entre 08:00 e 15:00 pode aparecer um ou dois títulos junto com os 6 do pitch. **Para desligar:** `GOAUDIT_GERADOR=desligado` no `.env.local` e reiniciar o `npm run dev`.
+- Se falhar (sem migração, conta ou rede), o ciclo segue só com o CSV.
+
+## 7. Outras bases
 
 - `npm run demo:montar -- --todos-cenarios`: todos os cenários plantados (usada para conferir o motor, não para o pitch).
 - `npm run demo:montar -- --completa`: a base inteira, com os títulos de fundo.

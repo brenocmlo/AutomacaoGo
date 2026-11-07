@@ -2,8 +2,8 @@
  * Carga inicial dos usuários de demonstração (B2). Usa a service_role — só aqui e nas migrações.
  *
  * Perfis mínimos do MVP, derivados da base (sem lista fixa no código):
- *  - aprovador: usuários ativos do ERP com perfil aprovador/diretoria (alçada de usuarios_sistema.csv)
- *  - consulta : gestores de contrato (PS10, PS11), ver PESSOAS_CONSULTA_DEMO
+ *  - aprovador: Cláudia Ferraz, aprovadora do ERP (alçada de usuarios_sistema.csv)
+ *  - consulta : gestor de contrato (PS10), ver PESSOAS_CONSULTA_DEMO
  *  - admin    : conduz a simulação
  *  - agentes  : operação (alçada = a do analista na política), validação e leitor
  * E-mails fictícios (@example.com). Senha única de demo em DEMO_SENHA.
@@ -28,7 +28,7 @@ export interface UsuarioDemo {
   email: string;
   senha: string;
   nome: string;
-  papel: 'aprovador' | 'consulta' | 'admin' | 'agente_operacao' | 'agente_validacao' | 'agente_leitor';
+  papel: 'aprovador' | 'consulta' | 'admin' | 'agente_operacao' | 'agente_validacao' | 'agente_leitor' | 'agente_gerador';
   alcada: number | null;
   pessoa_id: string | null;
   login_origem: string | null;
@@ -46,6 +46,12 @@ export function usuariosDemo(): UsuarioDemo[] {
   ] as const;
   for (const [env, nome, papel, alcada] of agentes) {
     out.push({ email: exigirEnv(`${env}_EMAIL`), senha: exigirEnv(`${env}_SENHA`), nome, papel, alcada, pessoa_id: null, login_origem: null });
+  }
+  // Gerador de eventos da simulação (migração 9): conta só de inserção em eventos_gerados. Opcional; sem as variáveis, a simulação roda só com a base de CSV.
+  if (process.env.AGENTE_GERADOR_EMAIL && process.env.AGENTE_GERADOR_SENHA) {
+    out.push({ email: process.env.AGENTE_GERADOR_EMAIL, senha: process.env.AGENTE_GERADOR_SENHA, nome: 'Gerador de eventos', papel: 'agente_gerador', alcada: 0, pessoa_id: null, login_origem: null });
+  } else {
+    console.warn('AGENTE_GERADOR_EMAIL / AGENTE_GERADOR_SENHA ausentes: conta do gerador de eventos não criada.');
   }
   return out;
 }

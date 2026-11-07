@@ -42,6 +42,6 @@ yarn-error.log*
 next-env.d.ts
 
 # GoAudit: artefatos gerados
-/data/demo/
+# data/demo (base enxuta do pitch) vai para o git: o deploy na Vercel precisa dela. Sem ela o painel cai na base original, com 876 títulos.
 /relatorios/
 /supabase/.temp/

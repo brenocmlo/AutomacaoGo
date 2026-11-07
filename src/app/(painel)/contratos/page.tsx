@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Paginacao, paginar } from '@/components/paginacao';
 import { Badge, Card, brl } from '@/components/ui';
 import { painel } from '@/lib/painel/dados';
 import { CLASSES, SITUACOES, listaContratos, type FiltrosContratos } from '@/lib/painel/contratos';
@@ -16,6 +17,7 @@ export default async function Contratos({ searchParams }: PageProps<'/contratos'
   const gestores = [...new Map(todas.map((l) => [l.contrato.gestor_pessoa_id, l.contrato.gestor_contrato])).entries()].sort();
   const comDesvio = todas.filter((l) => l.situacao === 'desvio').length;
   const proximos = todas.filter((l) => l.venceOuReajustaEm30).length;
+  const pag = paginar(linhas, sp.pagina);
   const restrito = p.usuario?.papel === 'consulta';
 
   return (
@@ -73,7 +75,7 @@ export default async function Contratos({ searchParams }: PageProps<'/contratos'
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {linhas.map((l) => {
+            {pag.itens.map((l) => {
               const s = SITUACOES[l.situacao];
               return (
                 <tr key={l.contrato.contrato_id} className="hover:bg-surface-2">
@@ -110,6 +112,7 @@ export default async function Contratos({ searchParams }: PageProps<'/contratos'
             )}
           </tbody>
         </table>
+        <Paginacao basePath="/contratos" params={sp} {...pag} />
       </Card>
     </div>
   );

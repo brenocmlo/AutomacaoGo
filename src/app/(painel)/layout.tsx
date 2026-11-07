@@ -7,12 +7,15 @@ import { supabaseConfigurado } from '@/lib/supabase/config';
 import { TempoReal } from '@/components/tempo-real';
 import { BotaoPendente } from '@/components/botao-pendente';
 import { usuarioAtual } from '@/lib/supabase/servidor';
+import { eventosRecentes } from '@/lib/painel/eventos';
+import { SinoEventos } from '@/components/sino-eventos';
 
 export default async function PainelLayout({ children }: LayoutProps<'/'>) {
   const hora = await horaSimulada();
   const { fim } = periodo();
   const local = !supabaseConfigurado();
   const usuario = await usuarioAtual();
+  const eventos = !local && usuario ? await eventosRecentes() : [];
   const podeRelogio = local || usuario?.papel === 'admin';
   const { usandoBaseOriginal } = contexto();
 
@@ -81,6 +84,7 @@ export default async function PainelLayout({ children }: LayoutProps<'/'>) {
             </div>
           )}
           <div className="ml-auto flex items-center gap-2">
+            {!local && usuario && <SinoEventos eventos={eventos} />}
             {!local && usuario && <TempoReal />}
             {local && <Badge tom="warn" title="Sem Supabase: decisões recalculadas a cada hora, sem persistência nem login">Modo local</Badge>}
             {usandoBaseOriginal && <Badge tom="neutral" title="Rode npm run demo:montar para incluir os cenários">Base original</Badge>}

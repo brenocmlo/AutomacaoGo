@@ -10,6 +10,8 @@ import { alertarGolpes, executarLeitor, type ResultadoLeitor } from './leitor';
 import { executarValidacao, type ResultadoValidacao } from './validacao';
 import { clienteAgente } from '@/lib/supabase/agentes';
 import { gerarResumos, type ResultadoResumos } from './resumos';
+import { executarGerador, lerEventosGerados, type ResultadoGerador } from './gerador';
+import { baseComEventos } from '@/lib/geracao/injetar';
 import { executarOperacao, fecharLotes, type DecisaoAtual, type ResultadoOperacao } from './operacao';
 
 export { todas };
@@ -21,6 +23,7 @@ export interface ResultadoCiclo extends Partial<ResultadoOperacao> {
   validacao?: ResultadoValidacao;
   leitor?: ResultadoLeitor;
   resumos?: ResultadoResumos;
+  gerador?: ResultadoGerador;
   hora: HoraSimulada;
   jaExecutado: boolean;
   titulosAvaliados: number;
@@ -68,8 +71,13 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
   }
 
   try {
-    const { base, config } = contexto();
+    const { base: baseCsv, config } = contexto();
     const estado = await estadoAtual(op, sim);
+    // 1) o gerador (conta própria, só insere) faz chegar os eventos novos desta hora; depois disso, motor, leitor e resumos
+    // enxergam a base de CSV mais os eventos, pela mesma função que o painel usa.
+    const jaGerados = await lerEventosGerados(op, sim);
+    const g = await executarGerador(sim, hora, baseCsv, config, jaGerados);
+    const base = baseComEventos(baseCsv, [...jaGerados, ...g.novos], hora);
     // 2–4) o que chegou até a hora. A IA lê as mensagens novas primeiro (falha = regras, RNF13); depois o motor de regras.
     const chegadas = recortarAte(base, hora, config.chegada.extrato_hora_disponivel).comunicacoes;
     // O que este ciclo lê pela primeira vez nesta simulação: tudo no primeiro ciclo; depois, o que chegou desde o anterior.
@@ -120,7 +128,7 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
     await op.from('log_auditoria').upsert(
       {
         simulacao_id: sim, data_hora_simulada: horaTs, ator_tipo: 'motor_regras', acao: 'avaliou a agenda', entidade: 'ciclo',
-        entidade_id: hora, motivo: `${avaliacoes.length} títulos avaliados; ${r.decisoesGravadas} decisões mudaram; ${r.retiradas} retiradas; ${enviados} enviados; ${rc.alertas} alertas de contrato; mensagens: ${leitor.lidas} lidas, ${leitor.comRisco} de risco; validação: ${rv.revisadas} revisadas, ${rv.devolvidas} devolvidas`,
+        entidade_id: hora, motivo: `${avaliacoes.length} títulos avaliados; ${r.decisoesGravadas} decisões mudaram; ${r.retiradas} retiradas; ${enviados} enviados; ${rc.alertas} alertas de contrato; mensagens: ${leitor.lidas} lidas, ${leitor.comRisco} de risco; validação: ${rv.revisadas} revisadas, ${rv.devolvidas} devolvidas; gerador: ${g.resultado.eventos} eventos novos`,
         chave: `ciclo|${hora}`,
       },
       { onConflict: 'simulacao_id,chave', ignoreDuplicates: true },
@@ -128,7 +136,7 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
 
     const duracaoMs = Date.now() - t0;
     await op.from('ciclos').update({ situacao: 'concluido', duracao_ms: duracaoMs, titulos_avaliados: avaliacoes.length }).eq('id', cicloId);
-    return { hora, jaExecutado: false, titulosAvaliados: avaliacoes.length, enviados, duracaoMs, contratos: rc, validacao: rv, leitor, resumos, ...r };
+    return { hora, jaExecutado: false, titulosAvaliados: avaliacoes.length, enviados, duracaoMs, contratos: rc, validacao: rv, leitor, resumos, gerador: g.resultado, ...r };
   } catch (e) {
     await op.from('ciclos').update({ situacao: 'falhou', duracao_ms: Date.now() - t0 }).eq('id', cicloId);
     throw e;

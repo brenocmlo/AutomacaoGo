@@ -18,6 +18,7 @@ import { Indices } from '@/lib/data/indices';
 import { centavos, cnpjDigitos, nomeComparavel, numero, raizCnpj } from '@/lib/data/normalizadores';
 import type { Contrato, Fornecedor, PedidoCompra } from '@/lib/data/tipos';
 import { CalendarioBancario, diasEntre, somarDias } from '@/lib/clock/relogio';
+import { chaveAcesso, cnpjFilial, fmt, linhaDigitavel, pad } from '@/lib/geracao/formato';
 import { mediana, nivelPorValor } from '@/lib/rules/auxiliares';
 
 const RAIZ = raizProjeto();
@@ -30,64 +31,6 @@ const pol = base.politicas;
 const INICIO = pol.periodo.inicio.slice(0, 16);
 // Unidade da empresa que recebe as notas e é a pagadora no DDA (tirada da própria base).
 const EMPRESA = { cnpj: base.notas[0]!.cnpj_destinatario, razao: base.notas[0]!.razao_social_destinatario };
-
-// ---------------------------------------------------------------------------
-// Utilidades de formato
-// ---------------------------------------------------------------------------
-const fmt = (v: number) => centavos(v).toFixed(2);
-const pad = (n: number | string, l: number) => String(n).padStart(l, '0');
-
-function mod10(campo: string): number {
-  let soma = 0, peso = 2;
-  for (let i = campo.length - 1; i >= 0; i--) {
-    let p = Number(campo[i]) * peso;
-    if (p > 9) p = Math.floor(p / 10) + (p % 10);
-    soma += p;
-    peso = peso === 2 ? 1 : 2;
-  }
-  return (10 - (soma % 10)) % 10;
-}
-
-function mod11(num: string, pesoMax = 9): number {
-  let soma = 0, peso = 2;
-  for (let i = num.length - 1; i >= 0; i--) {
-    soma += Number(num[i]) * peso;
-    peso = peso === pesoMax ? 2 : peso + 1;
-  }
-  const r = 11 - (soma % 11);
-  return r >= 10 ? 0 : r;
-}
-
-function linhaDigitavel(banco: string, vencimento: string, valor: number, agencia: string, conta: string, nossoNumero: string): string {
-  const livre = pad(agencia, 4).slice(-4) + pad(conta.replace(/\D/g, ''), 8).slice(-8) + '09' + pad(nossoNumero, 11).slice(-11);
-  const c1 = banco + '9' + livre.slice(0, 5);
-  const c2 = livre.slice(5, 15);
-  const c3 = livre.slice(15, 25);
-  const fator = 1000 + diasEntre('2025-02-22', vencimento);
-  const valorStr = pad(Math.round(valor * 100), 10);
-  const dvGeral = mod11(banco + '9' + pad(fator, 4) + valorStr + livre);
-  return `${c1}${mod10(c1)}${c2}${mod10(c2)}${c3}${mod10(c3)}${dvGeral || 1}${pad(fator, 4)}${valorStr}`;
-}
-
-function chaveAcesso(cnpj: string, data: string, numeroNf: number, modelo = '55'): string {
-  const aamm = data.slice(2, 4) + data.slice(5, 7);
-  const sem = '23' + aamm + cnpjDigitos(cnpj) + modelo + '001' + pad(numeroNf, 9) + '1' + pad(numeroNf * 7919 % 1e8, 8);
-  return sem + mod11(sem);
-}
-
-function cnpjFilial(cnpjMatriz: string, filial: number): string {
-  const base12 = raizCnpj(cnpjMatriz) + pad(filial, 4);
-  const dv = (s: string) => {
-    const pesos = s.length === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-    const r = [...s].reduce((a, c, i) => a + Number(c) * pesos[i]!, 0) % 11;
-    return r < 2 ? 0 : 11 - r;
-  };
-  const d1 = dv(base12);
-  const d2 = dv(base12 + d1);
-  const n = base12 + d1 + d2;
-  return `${n.slice(0, 2)}.${n.slice(2, 5)}.${n.slice(5, 8)}/${n.slice(8, 12)}-${n.slice(12)}`;
-}
-
 // ---------------------------------------------------------------------------
 // Escolha de entidades (por critério, nunca por ID)
 // ---------------------------------------------------------------------------

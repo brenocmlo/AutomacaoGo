@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Search, X } from 'lucide-react';
 import { Badge, Card, URGENCIAS, brl, destinoUi } from '@/components/ui';
 import { DetalhePainel } from '@/components/detalhe-titulo';
+import { Paginacao, paginar } from '@/components/paginacao';
 import { GRUPOS_REGRAS, TODOS_DESTINOS, detalhe, fila, gruposDe, nomeFornecedor, painel, type FiltrosFila } from '@/lib/painel/dados';
 
 const um = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || undefined;
@@ -28,7 +29,7 @@ export default async function FilaAuditoria({ searchParams }: PageProps<'/audito
     return s ? `?${s}` : '';
   };
   const filtrosAtivos = Object.values(filtros).some(Boolean);
-  const MAX = 300;
+  const pag = paginar(linhas, sp.pagina);
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-4">
@@ -71,7 +72,7 @@ export default async function FilaAuditoria({ searchParams }: PageProps<'/audito
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {linhas.slice(0, MAX).map((a) => {
+                {pag.itens.map((a) => {
                   const ativo = a.tituloId === selecionado;
                   const href = `/auditoria${qs({ t: a.tituloId })}`;
                   const falhas: string[] = a.resultados.filter((r) => !r.passou).map((r) => r.codigo);
@@ -94,7 +95,7 @@ export default async function FilaAuditoria({ searchParams }: PageProps<'/audito
               </tbody>
             </table>
           </div>
-          {linhas.length > MAX && <p className="border-t border-border px-3 py-2 text-xs text-muted">Mostrando {MAX} de {linhas.length}. Use os filtros para refinar.</p>}
+          <Paginacao basePath="/auditoria" params={sp} {...pag} />
           {linhas.length === 0 && <p className="px-3 py-8 text-center text-sm text-muted">Nenhum título com esses filtros.</p>}
         </Card>
 

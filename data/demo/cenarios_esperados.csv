@@ -1,0 +1,8 @@
+cenario_id,descricao,hora_avaliacao,alertas_esperados,avisar_esperado,contrato_id,competencia,selo,aprovador_esperado,validacao_esperada,comunicacao_id,tipo_esperado,risco_esperado,sinais_esperados,golpe_para,titulo_id,regras_esperadas,destino_esperado,notificar_esperado
+C01,"Mesmo título lançado duas vezes, NF digitada com zeros à esquerda e com série",2026-11-02T08:00,,,,,,,,,,,,,TP900003,,LIBERADO_AUTOMATICO,
+C01,"Mesmo título lançado duas vezes, NF digitada com zeros à esquerda e com série",2026-11-02T08:00,,,,,,,,,,,,,TP900004,R01,RETIRADO,PS01
+C09,"NF 1,5% acima da OC (dentro da tolerância)",2026-11-02T08:00,,,,,,,,,,,,,TP900028,,LIBERADO_AUTOMATICO,
+C12,"Aluguel sem NF, igual ao contrato",2026-11-02T08:00,,,CT-0135,2026-11,conforme_contrato,,,,,,,,TP900040,,CONFERIDO_AGUARDANDO_APROVADOR,
+C05,"WhatsApp (fictício) de número novo pedindo troca de conta, seguido de alteração cadastral sem confirmação válida",2026-11-02T15:00,,,,,,,,,,,,,TP900089,R07 R09 R14,RETIRADO,PS01
+C05,"WhatsApp (fictício) de número novo pedindo troca de conta, seguido de alteração cadastral sem confirmação válida",2026-11-02T15:00,,,,,,,,,,,,,TP900092,R07 R09 R14,RETIRADO,PS01
+C05,"WhatsApp (fictício) de número novo pedindo troca de conta, seguido de alteração cadastral sem confirmação válida",2026-11-02T15:00,,,,,,,,WA990093,troca_dados_bancarios,critico,dominio_diferente pede_troca_conta telefone_novo_citado,PS01 PS08,,,,

@@ -17,6 +17,7 @@ const ids = {
   op: '00000000-0000-0000-0000-0000000000a1',
   val: '00000000-0000-0000-0000-0000000000a2',
   leitor: '00000000-0000-0000-0000-0000000000a3',
+  gerador: '00000000-0000-0000-0000-0000000000a4',
   claudia: '00000000-0000-0000-0000-0000000000b1',
   renata: '00000000-0000-0000-0000-0000000000b2',
   helena: '00000000-0000-0000-0000-0000000000b3',
@@ -29,6 +30,7 @@ const perfis: Record<Quem, { papel: string; alcada: number | null; pessoa: strin
   op: { papel: 'agente_operacao', alcada: 5000, pessoa: null, login: null },
   val: { papel: 'agente_validacao', alcada: 0, pessoa: null, login: null },
   leitor: { papel: 'agente_leitor', alcada: 0, pessoa: null, login: null },
+  gerador: { papel: 'agente_gerador', alcada: 0, pessoa: null, login: null },
   claudia: { papel: 'aprovador', alcada: 50000, pessoa: null, login: 'u12' },
   renata: { papel: 'aprovador', alcada: 50000, pessoa: 'PS01', login: 'u13' },
   helena: { papel: 'aprovador', alcada: null, pessoa: 'PS03', login: 'u15' },
@@ -297,5 +299,53 @@ describe('contratos (RLS por gestor do contrato)', () => {
   });
   it('ninguém apaga vínculo ou competência', async () => {
     expect((await como('op', `delete from public.competencias_contrato where contrato_id = 'CT-A'`)).erro).toMatch(/permission denied/);
+  });
+});
+
+describe('gerador de eventos (migração 9)', () => {
+  const evento = (chave: string, arquivo = 'contas_a_pagar') =>
+    como('gerador', `insert into public.eventos_gerados (simulacao_id, hora_simulada, evento, trilha, arquivo, linha, fornecedor_id, origem, chave)
+      values ($1, '2026-11-03 09:00', 'EVG1103091', 'rotina', $2, '{"titulo_id":"TPG1103091"}'::jsonb, 'FP1', 'regra', $3)`, [sim, arquivo, chave]);
+
+  it('o gerador insere eventos, mas não os lê, nem lê decisões ou log', async () => {
+    expect((await evento('2026-11-03T09:00|EVG1103091|contas_a_pagar|0')).erro).toBeNull();
+    expect((await como('gerador', 'select * from public.eventos_gerados')).rows).toEqual([]);
+    expect((await como('gerador', 'select * from public.decisoes')).rows).toEqual([]);
+    expect((await como('gerador', 'select * from public.log_auditoria')).rows).toEqual([]);
+  });
+  it('a mesma chave não entra duas vezes (idempotência)', async () => {
+    expect((await evento('2026-11-03T09:00|EVG1103091|contas_a_pagar|0')).erro).toMatch(/duplicate key|eventos_gerados_chave_uk/);
+    expect((await evento('2026-11-03T09:00|EVG1103091|agenda_remessa|1', 'agenda_remessa')).erro).toBeNull();
+  });
+  it('arquivo fora da lista é recusado pelo banco', async () => {
+    expect((await evento('x1', 'extrato_banco_meridiano')).erro).toMatch(/check constraint/);
+  });
+  it('humanos e agentes de operação e validação leem; o leitor e o anônimo não', async () => {
+    for (const q of ['claudia', 'marcos', 'admin', 'op', 'val'] as const) {
+      expect((await como(q, 'select chave from public.eventos_gerados')).rows.length, q).toBe(2);
+    }
+    expect((await como('leitor', 'select chave from public.eventos_gerados')).rows).toEqual([]);
+    expect((await como('anon', 'select * from public.eventos_gerados')).erro).toMatch(/permission denied/);
+  });
+  it('só o gerador insere; ninguém altera nem apaga', async () => {
+    for (const q of ['admin', 'op', 'claudia', 'leitor'] as const) {
+      const r = await como(q, `insert into public.eventos_gerados (simulacao_id, hora_simulada, evento, trilha, arquivo, linha, chave)
+        values ($1, '2026-11-03 09:00', 'EVX', 'rotina', 'contas_a_pagar', '{}'::jsonb, $2)`, [sim, `intruso-${q}`]);
+      expect(r.erro, q).toMatch(/row-level security|permission denied/);
+    }
+    for (const q of ['admin', 'op', 'gerador'] as const) {
+      expect((await como(q, `update public.eventos_gerados set evento = 'x'`)).erro, q).toMatch(/permission denied/);
+      expect((await como(q, 'delete from public.eventos_gerados')).erro, q).toMatch(/permission denied/);
+    }
+  });
+  it('o log do gerador sai com ator_tipo próprio, definido pelo JWT', async () => {
+    const ins = await como('gerador', `insert into public.log_auditoria (simulacao_id, ator_tipo, acao, entidade, entidade_id, chave)
+      values ($1, 'humano', 'gerou título de fornecedor', 'titulo', 'TPG1103091', 'gerador|EVG1103091')`, [sim]);
+    expect(ins.erro).toBeNull();
+    const r = await como<{ ator_tipo: string; ator_papel: string }>('admin', `select ator_tipo, ator_papel from public.log_auditoria where chave = 'gerador|EVG1103091'`);
+    expect(r.rows).toEqual([{ ator_tipo: 'gerador_eventos', ator_papel: 'agente_gerador' }]);
+  });
+  it('reexecutar a migração 9 não quebra (idempotente)', async () => {
+    await expect(db.exec(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261111000009_gerador_eventos.sql'), 'utf8'))).resolves.not.toThrow();
   });
 });

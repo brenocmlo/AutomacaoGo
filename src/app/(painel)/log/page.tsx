@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import { Download, X } from 'lucide-react';
 import { Badge, Card, CardTitulo, Stat, brl, duracao } from '@/components/ui';
-import { custoIA, gargalos, ultimosLogs, usd, type FiltrosLog } from '@/lib/painel/log';
+import { Paginacao, paginar } from '@/components/paginacao';
+import { custoIA, gargalos, paginaDeLogs, usd, type FiltrosLog } from '@/lib/painel/log';
 import { painel } from '@/lib/painel/dados';
 import { supabaseConfigurado } from '@/lib/supabase/config';
 
 const um = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || undefined;
 const ATORES: Record<string, string> = {
   motor_regras: 'Motor de regras', agente_operacao: 'Agente de operação', agente_validacao: 'Agente de validação',
-  leitor_mensagens: 'Leitor de mensagens', humano: 'Humano', sistema: 'Sistema',
+  leitor_mensagens: 'Leitor de mensagens', gerador_eventos: 'Gerador de eventos', humano: 'Humano', sistema: 'Sistema',
 };
 const pct = (v: number | null) => (v == null ? '—' : `${(v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`);
 const num = (v: number) => v.toLocaleString('pt-BR');
@@ -22,7 +23,13 @@ export default async function LogEGargalos({ searchParams }: PageProps<'/log'>) 
     return <Card className="mx-auto max-w-lg p-6 text-center text-sm text-muted">O log e os gargalos dependem de uma simulação ativa no Supabase.</Card>;
   }
 
-  const [linhas, ia, g] = await Promise.all([ultimosLogs(p, filtros), custoIA(p), gargalos(p)]);
+  const POR_PAGINA_LOG = 25;
+  const pedida = Number(um(sp.pagina));
+  const [pag, ia, g] = await Promise.all([paginaDeLogs(p, filtros, Number.isFinite(pedida) && pedida >= 1 ? Math.floor(pedida) : 1, POR_PAGINA_LOG), custoIA(p), gargalos(p)]);
+  const linhas = pag.linhas;
+  const paginasLog = Math.max(1, Math.ceil(pag.total / POR_PAGINA_LOG));
+  const paginaLog = Math.min(Math.max(1, Math.floor(pedida) || 1), paginasLog);
+  const diasIa = paginar(ia.porDia, sp.pdia, 10);
   const exportar = new URLSearchParams(Object.entries(filtros).filter(([, v]) => v) as [string, string][]).toString();
   const filtrosAtivos = Object.values(filtros).some(Boolean);
 
@@ -94,7 +101,7 @@ export default async function LogEGargalos({ searchParams }: PageProps<'/log'>) 
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {ia.porDia.map((d) => (
+              {diasIa.itens.map((d) => (
                 <tr key={d.dia} className="tabular">
                   <td className="px-4 py-2">{d.dia.split('-').reverse().slice(0, 2).join('/')}</td>
                   <td className="px-4 py-2 text-right">{num(d.chamadas)}</td>
@@ -118,6 +125,7 @@ export default async function LogEGargalos({ searchParams }: PageProps<'/log'>) 
             )}
           </table>
         </div>
+        <Paginacao basePath="/log" params={sp} param="pdia" {...diasIa} />
       </Card>
 
       <Card>
@@ -166,7 +174,8 @@ export default async function LogEGargalos({ searchParams }: PageProps<'/log'>) 
             </tbody>
           </table>
         </div>
-        <p className="border-t border-border px-4 py-2 text-xs text-muted">Mostrando os 100 mais recentes; a exportação traz todos os registros com os filtros aplicados.</p>
+        <Paginacao basePath="/log" params={sp} pagina={paginaLog} paginas={paginasLog} total={pag.total} de={(paginaLog - 1) * POR_PAGINA_LOG} ate={Math.min(paginaLog * POR_PAGINA_LOG, pag.total)} />
+        <p className="px-4 pb-2 text-xs text-muted">A exportação traz todos os registros com os filtros aplicados.</p>
       </Card>
     </div>
   );

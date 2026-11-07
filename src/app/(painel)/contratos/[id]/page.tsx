@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Paginacao, paginar } from '@/components/paginacao';
 import { notFound } from 'next/navigation';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { Badge, Card, CardTitulo, brl } from '@/components/ui';
@@ -8,13 +9,15 @@ import { CLASSES, SITUACOES, detalheContrato } from '@/lib/painel/contratos';
 
 const dataBR = (d: string | null | undefined) => (d ? d.slice(0, 10).split('-').reverse().join('/') : '—');
 
-export default async function Contrato({ params }: PageProps<'/contratos/[id]'>) {
+export default async function Contrato({ params, searchParams }: PageProps<'/contratos/[id]'>) {
   const { id } = await params;
+  const sp = await searchParams;
   const p = await painel();
   const det = await detalheContrato(p, decodeURIComponent(id));
   if (!det) notFound();
   const { linha: l, titulos, alertas } = det;
   const c = l.contrato;
+  const comps = paginar([...l.competencias].reverse(), sp.pagina, 12);
   const naFila = new Set(p.avaliacoes.map((a) => a.tituloId));
 
   const ficha: [string, string][] = [
@@ -94,7 +97,7 @@ export default async function Contrato({ params }: PageProps<'/contratos/[id]'>)
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {[...l.competencias].reverse().map((x) => (
+            {comps.itens.map((x) => (
               <tr key={x.competencia} className="align-top">
                 <td className="px-3 py-2 font-mono text-xs">{x.competencia}</td>
                 <td className="px-3 py-2 text-xs">{dataBR(x.vencimentoPrevisto)}</td>
@@ -126,6 +129,7 @@ export default async function Contrato({ params }: PageProps<'/contratos/[id]'>)
             ))}
           </tbody>
         </table>
+        <Paginacao basePath={`/contratos/${id}`} params={sp} {...comps} />
       </Card>
     </div>
   );

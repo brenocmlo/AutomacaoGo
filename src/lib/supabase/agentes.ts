@@ -5,7 +5,7 @@ import { chavesPublicas } from './config';
  * Sessões dos agentes. Cada agente entra com a PRÓPRIA conta (e-mail/senha do servidor)
  * e grava com o próprio JWT, sujeito à RLS. A service_role nunca é usada em execução.
  */
-export type Agente = 'operacao' | 'validacao' | 'leitor';
+export type Agente = 'operacao' | 'validacao' | 'leitor' | 'gerador';
 
 const sessoes = new Map<Agente, Promise<SupabaseClient>>();
 

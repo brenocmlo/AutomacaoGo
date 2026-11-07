@@ -15,25 +15,25 @@ export interface ContaDemo {
 export const emailDemo = (nome: string) =>
   `${nomeComparavel(nome).toLowerCase().split(' ').filter(Boolean).join('.')}@example.com`;
 
-/**
- * Gestores de contrato (papel consulta) mantidos na demo: PS10 (22 contratos) e PS11 (15).
- * Dois, para a bateria de RLS provar que um gestor não vê os contratos do outro.
- */
-export const PESSOAS_CONSULTA_DEMO = ['PS10', 'PS11'];
+/** Gestor de contrato (papel consulta) mantido na demo: PS10 (22 contratos). */
+export const PESSOAS_CONSULTA_DEMO = ['PS10'];
+
+/** Login ERP do único aprovador humano da demo (Cláudia Ferraz, até R$ 50 mil). */
+export const LOGIN_APROVADOR_DEMO = 'usuario_12';
 
 export const EMAIL_ADMIN_PADRAO = 'admin.simulacao@example.com';
 
 /**
- * Contas humanas de demonstração, derivadas da base (sem lista fixa):
- *  - aprovador: usuários ativos do ERP com perfil aprovador/diretoria
- *  - consulta : gestores de contrato listados em PESSOAS_CONSULTA_DEMO
- *  - admin    : conduz a simulação
+ * Contas humanas de demonstração, uma por função (derivadas da base):
+ *  - aprovador: Cláudia Ferraz (LOGIN_APROVADOR_DEMO), alçada do ERP
+ *  - consulta : gestor de contrato PS10
+ *  - admin    : conduz a simulação, decide por todos (representa PS01/PS03) e vê tudo
  */
 export function contasDemoHumanas(base: BaseEntrada, emailAdmin = EMAIL_ADMIN_PADRAO): ContaDemo[] {
   const out: ContaDemo[] = [];
   const pessoas = new Set<string>();
-  for (const u of base.usuarios) {
-    if (u.sistema !== 'ERP' || !/^(aprovador|diretoria)$/.test(u.perfil) || !/ativo/i.test(u.status) || u.data_desligamento) continue;
+  const u = base.usuarios.find((x) => x.sistema === 'ERP' && x.login === LOGIN_APROVADOR_DEMO && /ativo/i.test(x.status) && !x.data_desligamento);
+  if (u) {
     const alcada = /sem limite/i.test(u.alcada_rs) ? null : Number(u.alcada_rs);
     out.push({ email: emailDemo(u.nome), nome: u.nome, papel: 'aprovador', alcada, pessoa_id: u.pessoa_id || null, login_origem: u.login });
     if (u.pessoa_id) pessoas.add(u.pessoa_id);

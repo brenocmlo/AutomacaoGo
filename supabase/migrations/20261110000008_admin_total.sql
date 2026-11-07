@@ -120,3 +120,11 @@ $$;
 drop policy if exists alertas_admin_upd on public.alertas;
 create policy alertas_admin_upd on public.alertas for update to authenticated
   using (public.jwt_papel() = 'admin') with check (public.jwt_papel() = 'admin');
+
+-- 5) Notificações: a administração lê (e marca como lida) as caixas de todas as pessoas, que não têm conta
+drop policy if exists notificacoes_admin_le on public.notificacoes;
+create policy notificacoes_admin_le on public.notificacoes for select to authenticated
+  using (public.jwt_papel() = 'admin');
+drop policy if exists notificacoes_admin_upd on public.notificacoes;
+create policy notificacoes_admin_upd on public.notificacoes for update to authenticated
+  using (public.jwt_papel() = 'admin') with check (public.jwt_papel() = 'admin');

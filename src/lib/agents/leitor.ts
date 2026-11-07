@@ -33,7 +33,7 @@ function partes<T>(itens: T[], n = 200): T[][] {
  * O que já foi gravado neste processo nem é reenviado; se um lote bater em duplicata, regrava linha a linha.
  */
 const gravados = new Map<string, Set<string>>();
-async function inserirTolerante(cliente: SupabaseClient, tabela: string, sim: string, linhas: Record<string, unknown>[], chaveDe: (l: Record<string, unknown>) => string) {
+export async function inserirTolerante(cliente: SupabaseClient, tabela: string, sim: string, linhas: Record<string, unknown>[], chaveDe: (l: Record<string, unknown>) => string) {
   const feitos = gravados.get(`${sim}|${tabela}`) ?? new Set<string>();
   gravados.set(`${sim}|${tabela}`, feitos);
   const novas = linhas.filter((l) => !feitos.has(chaveDe(l)));

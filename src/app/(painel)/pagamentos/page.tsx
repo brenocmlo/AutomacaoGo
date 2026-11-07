@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Paginacao, paginar } from '@/components/paginacao';
 import { Search, X } from 'lucide-react';
 import { Badge, Card, CardTitulo, Stat, brl, destinoUi, type Tom } from '@/components/ui';
 import { nomeFornecedor, painel } from '@/lib/painel/dados';
@@ -27,9 +28,10 @@ export default async function Pagamentos({ searchParams }: PageProps<'/pagamento
   let linhas = todas.filter((l) => (!classe || l.classe === classe) && (!busca || `${l.tituloId} ${l.fornecedor}`.toLowerCase().includes(busca)));
   const chave = (l: LinhaRotina) => (ordem === 'valor' ? l.valor : Math.abs(l.variacaoMediana ?? -1));
   linhas = [...linhas].sort((a, b) => chave(b) - chave(a));
-  const MAX = 200;
+  const pag = paginar(linhas, sp.pagina);
 
   const hist = forn ? historicoPagamentos(p, forn) : [];
+  const histPag = paginar([...hist].reverse(), sp.ph, 10);
   const selecionada = forn ? todas.filter((l) => l.fornecedorId === forn) : [];
   const qs = (extra: Record<string, string | undefined>) => {
     const q = new URLSearchParams();
@@ -90,7 +92,7 @@ export default async function Pagamentos({ searchParams }: PageProps<'/pagamento
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {linhas.slice(0, MAX).map((l) => {
+                {pag.itens.map((l) => {
                   const d = destinoUi(l.destino);
                   return (
                     <tr key={l.tituloId} className={l.fornecedorId === forn ? 'bg-accent-soft' : 'hover:bg-surface-2'}>
@@ -109,7 +111,7 @@ export default async function Pagamentos({ searchParams }: PageProps<'/pagamento
               </tbody>
             </table>
           </div>
-          {linhas.length > MAX && <p className="border-t border-border px-3 py-2 text-xs text-muted">Mostrando {MAX} de {linhas.length}. Refine os filtros.</p>}
+          <Paginacao basePath="/pagamentos" params={sp} {...pag} />
         </Card>
 
         {forn && (
@@ -132,7 +134,7 @@ export default async function Pagamentos({ searchParams }: PageProps<'/pagamento
               <table className="w-full text-sm">
                 <thead className="text-left text-xs text-muted"><tr><th className="py-1 font-medium">Data</th><th className="py-1 text-right font-medium">Valor pago</th><th className="py-1 text-right font-medium">Vs. anterior</th></tr></thead>
                 <tbody className="divide-y divide-border">
-                  {[...hist].reverse().slice(0, 15).map((h) => (
+                  {histPag.itens.map((h) => (
                     <tr key={h.tituloId}>
                       <td className="py-1.5">{h.data.split('-').reverse().join('/')} <span className="font-mono text-xs text-muted">{h.tituloId}</span></td>
                       <td className="tabular py-1.5 text-right">{brl(h.valor)}</td>
@@ -142,6 +144,7 @@ export default async function Pagamentos({ searchParams }: PageProps<'/pagamento
                   {!hist.length && <tr><td colSpan={3} className="py-4 text-center text-muted">Nenhum pagamento anterior.</td></tr>}
                 </tbody>
               </table>
+              <Paginacao basePath="/pagamentos" params={sp} param="ph" {...histPag} />
             </div>
           </Card>
         )}

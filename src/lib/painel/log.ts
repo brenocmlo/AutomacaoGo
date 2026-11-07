@@ -44,6 +44,15 @@ export function filtrarLog(q: any, f: FiltrosLog): any {
   return q;
 }
 
+/** Uma página do log (do mais recente ao mais antigo) e o total com os filtros aplicados. */
+export async function paginaDeLogs(p: Painel, f: FiltrosLog, pagina: number, porPagina: number): Promise<{ linhas: LinhaLog[]; total: number }> {
+  if (!p.sim) return { linhas: [], total: 0 };
+  const q = (await supabaseServidor()).from('log_auditoria').select(COLUNAS_LOG, { count: 'exact' }).eq('simulacao_id', p.sim.id);
+  const de = (pagina - 1) * porPagina;
+  const { data, count } = await filtrarLog(q, f).order('log_id', { ascending: false }).range(de, de + porPagina - 1);
+  return { linhas: (data ?? []) as unknown as LinhaLog[], total: count ?? 0 };
+}
+
 export async function ultimosLogs(p: Painel, f: FiltrosLog, limite = 100): Promise<LinhaLog[]> {
   if (!p.sim) return [];
   const q = (await supabaseServidor()).from('log_auditoria').select(COLUNAS_LOG).eq('simulacao_id', p.sim.id);
