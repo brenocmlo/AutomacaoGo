@@ -3,7 +3,7 @@
  *
  * Perfis mínimos do MVP, derivados da base (sem lista fixa no código):
  *  - aprovador: usuários ativos do ERP com perfil aprovador/diretoria (alçada de usuarios_sistema.csv)
- *  - consulta : demais pessoas acionáveis de politicas.csv
+ *  - consulta : gestores de contrato (PS10, PS11), ver PESSOAS_CONSULTA_DEMO
  *  - admin    : conduz a simulação
  *  - agentes  : operação (alçada = a do analista na política), validação e leitor
  * E-mails fictícios (@example.com). Senha única de demo em DEMO_SENHA.

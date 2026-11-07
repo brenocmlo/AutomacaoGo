@@ -1,4 +1,4 @@
 alteracao_id,data_hora,fornecedor_id,campo,valor_anterior,valor_novo,alterado_por,origem,confirmacao_registrada,confirmacao_como
-AC900053,2026-10-28 10:00:00,FP4595,banco,905,289,usuario_03,email,sim,ligação para o telefone do cadastro (51) 3731-4656 em 28/10/2026; confirmado com o gerente financeiro
-AC900054,2026-10-28 10:00:00,FP4595,agencia,0001,3814,usuario_03,email,sim,ligação para o telefone do cadastro (51) 3731-4656 em 28/10/2026; confirmado com o gerente financeiro
-AC900055,2026-10-28 10:00:00,FP4595,conta,0000001-0,3499192-7,usuario_03,email,sim,ligação para o telefone do cadastro (51) 3731-4656 em 28/10/2026; confirmado com o gerente financeiro
+AC900053,2026-10-28 10:00:00,FP4595,banco,905,289,usuario_03,email,sim,ligação para o telefone do cadastro 3731-4656 em 28/10/2026; confirmado com o gerente financeiro
+AC900054,2026-10-28 10:00:00,FP4595,agencia,0001,3814,usuario_03,email,sim,ligação para o telefone do cadastro 3731-4656 em 28/10/2026; confirmado com o gerente financeiro
+AC900055,2026-10-28 10:00:00,FP4595,conta,0000001-0,3499192-7,usuario_03,email,sim,ligação para o telefone do cadastro 3731-4656 em 28/10/2026; confirmado com o gerente financeiro

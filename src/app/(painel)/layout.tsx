@@ -1,9 +1,11 @@
-import { Bell, ClipboardList, FileSignature, Clock, FastForward, LayoutDashboard, LogOut, RotateCcw, ScrollText, ShieldCheck } from 'lucide-react';
+import { Bell, ClipboardList, FileSignature, Clock, FastForward, LayoutDashboard, LogOut, RotateCcw, ScrollText, ShieldCheck, TrendingUp, Users } from 'lucide-react';
 import { NavLink } from '@/components/nav-link';
 import { Badge, PAPEIS, horaBR } from '@/components/ui';
 import { avancarRelogio, reiniciarRelogio, sair } from '@/app/acoes';
 import { contexto, horaSimulada, periodo } from '@/lib/painel/dados';
 import { supabaseConfigurado } from '@/lib/supabase/config';
+import { TempoReal } from '@/components/tempo-real';
+import { BotaoPendente } from '@/components/botao-pendente';
 import { usuarioAtual } from '@/lib/supabase/servidor';
 
 export default async function PainelLayout({ children }: LayoutProps<'/'>) {
@@ -24,9 +26,11 @@ export default async function PainelLayout({ children }: LayoutProps<'/'>) {
         <nav className="flex flex-col gap-1">
           <NavLink href="/" icone={<LayoutDashboard className="size-4" />}>Visão geral</NavLink>
           <NavLink href="/auditoria" icone={<ClipboardList className="size-4" />}>Fila de auditoria</NavLink>
+          <NavLink href="/pagamentos" icone={<TrendingUp className="size-4" />}>Rotina e variações</NavLink>
           <NavLink href="/contratos" icone={<FileSignature className="size-4" />}>Contratos</NavLink>
           <NavLink href="/alertas" icone={<Bell className="size-4" />} desabilitado={local}>Alertas e caixa</NavLink>
-          <NavLink href="/log" icone={<ScrollText className="size-4" />} desabilitado>Log e gargalos</NavLink>
+          <NavLink href="/log" icone={<ScrollText className="size-4" />} desabilitado={local}>Log e gargalos</NavLink>
+          {usuario?.papel === 'admin' && <NavLink href="/equipe" icone={<Users className="size-4" />}>Equipe</NavLink>}
         </nav>
         <div className="mt-auto space-y-2 px-3 text-xs text-muted">
           {usuario ? (
@@ -55,23 +59,29 @@ export default async function PainelLayout({ children }: LayoutProps<'/'>) {
               {[1, 6, 24].map((p) => (
                 <form key={p} action={avancarRelogio}>
                   <input type="hidden" name="passos" value={p} />
-                  <button
+                  <BotaoPendente
                     disabled={hora >= fim}
-                    className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
+                    icone={<FastForward className="size-3" />}
+                    className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-2"
                   >
-                    <FastForward className="size-3" />+{p}h
-                  </button>
+                    +{p}h
+                  </BotaoPendente>
                 </form>
               ))}
               <form action={reiniciarRelogio}>
-                <button className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-2"
-                  title={local ? 'Voltar ao início' : 'Encerra a simulação atual e começa outra (o histórico fica)'}>
-                  <RotateCcw className="size-3" />{local ? 'Reiniciar' : 'Nova simulação'}
-                </button>
+                <BotaoPendente
+                  icone={<RotateCcw className="size-3" />}
+                  pendente="Reiniciando..."
+                  className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-2"
+                  title={local ? 'Voltar ao início' : 'Encerra a simulação atual e começa outra em 02/11 08:00 (o histórico e o log ficam)'}
+                >
+                  {local ? 'Reiniciar' : 'Nova simulação'}
+                </BotaoPendente>
               </form>
             </div>
           )}
           <div className="ml-auto flex items-center gap-2">
+            {!local && usuario && <TempoReal />}
             {local && <Badge tom="warn" title="Sem Supabase: decisões recalculadas a cada hora, sem persistência nem login">Modo local</Badge>}
             {usandoBaseOriginal && <Badge tom="neutral" title="Rode npm run demo:montar para incluir os cenários">Base original</Badge>}
           </div>

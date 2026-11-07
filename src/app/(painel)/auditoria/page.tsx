@@ -103,7 +103,7 @@ export default async function FilaAuditoria({ searchParams }: PageProps<'/audito
             det={det}
             fecharHref={`/auditoria${qs({ t: undefined })}`}
             simulacaoId={p.sim?.id ?? null}
-            podeDecidir={p.usuario?.papel === 'aprovador'}
+            podeDecidir={p.usuario?.papel === 'aprovador' || p.usuario?.papel === 'admin'}
           />
         )}
         {selecionado && !det && (

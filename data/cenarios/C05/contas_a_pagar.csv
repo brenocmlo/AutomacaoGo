@@ -1,0 +1,3 @@
+titulo_id,fornecedor_id,numero_nf_digitado,oc_id,parcela,valor,vencimento,forma_pagamento,linha_digitavel,cnpj_beneficiario_boleto,origem_lancamento,lancado_por,data_lancamento,status,data_pagamento,banco_pagador,lote_remessa,historico,nivel_aprovacao
+TP900089,FP4977,900088,OC-90087,1/1,3250.37,2026-11-04,ted,,,xml_portal,usuario_03,2026-10-29 10:00:00,agendado,,Banco Meridiano,RM20261104-MER,NF 900088 parc 1/1 - Talentos RH,analista
+TP900092,FP4977,900091,OC-90090,1/1,2780.37,2026-11-04,ted,,,xml_portal,usuario_03,2026-10-29 10:00:00,agendado,,Banco Meridiano,RM20261104-MER,NF 900091 parc 1/1 - Talentos RH,analista

@@ -28,7 +28,16 @@ export async function simulacaoAtual(cliente: SupabaseClient): Promise<Simulacao
   };
 }
 
-/** Inicia uma simulação nova (o histórico das anteriores fica) e roda o primeiro ciclo. */
+/**
+ * Inicia uma simulação nova e roda o primeiro ciclo (reinício rápido da demo).
+ *
+ * Nada é apagado: todas as tabelas de estado (decisões, movimentos de lote, solicitações, alertas,
+ * notificações, mensagens processadas, ciclos) são chaveadas por `simulacao_id`, e o painel só lê a
+ * simulação mais recente. Uma `simulacao_id` nova já é uma tela limpa, sem DELETE (que o log de
+ * auditoria imutável também impediria: a FK dele é `on delete restrict`). As contas ficam.
+ * O custo do reinício é um ciclo (~2 s de regras + gravações); a leitura das mensagens por IA só
+ * demora na primeira vez do processo (poucas mensagens na base enxuta); depois vem do cache (ver `npm run demo:aquecer`).
+ */
 export async function iniciarSimulacao(admin: SupabaseClient): Promise<{ sim: Simulacao; ciclo: ResultadoCiclo }> {
   const p = contexto().base.politicas.periodo;
   const inicio = p.inicio.slice(0, 16);

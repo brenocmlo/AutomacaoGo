@@ -1,6 +1,7 @@
 import { nomeComparavel, raizCnpj, valorBR } from '@/lib/data/normalizadores';
 import type { Indices } from '@/lib/data/indices';
 import type { Comunicacao, Fornecedor } from '@/lib/data/tipos';
+import { chaveRefinamento, refinamentos } from './refinamento';
 
 /**
  * Leitor de mensagens, parte sem IA (seção 6.2: remetente, regex e uma classificação por regras).
@@ -49,6 +50,8 @@ export interface Leitura {
   modelo: string;
   /** Risco da mensagem por si; o R14 cruza com título e cadastro. */
   risco: 'nenhum' | 'alerta' | 'critico';
+  /** Chamadas de IA que contribuíram (modelo, tokens, custo). Vazio = só regras. */
+  ia: { modelo: string; tokensEntrada: number; tokensSaida: number; custoUsd: number }[];
   /** Frase curta para log e alerta, sem repetir o texto bruto. */
   resumo: string;
 }
@@ -111,9 +114,30 @@ function identificarFornecedor(c: Comunicacao, idx: Indices): { f: Fornecedor | 
 const PALAVRA_EXECUTIVO = /diretor(a)?\b|\bcfo\b|presidente|\bceo\b/i;
 
 export function lerMensagem(c: Comunicacao, idx: Indices): Leitura {
-  const boletos = extrairBoletos(c.anexos);
-  const { tipo, confianca: confBase } = classificar(c, boletos);
+  const ia = refinamentos.get(chaveRefinamento(c));
+  const doRegex = extrairBoletos(c.anexos);
+  const boletos = doRegex.length ? doRegex : (ia?.boletos ?? []);
   const { f, confere, dominioDiferente } = identificarFornecedor(c, idx);
+  const porRegras = classificar(c, boletos);
+  let { tipo, confianca: confBase } = porRegras;
+  let divergencia = false;
+  if (ia?.tipo) {
+    const PERIGOSOS: string[] = ['phishing', 'troca_dados_bancarios', 'segunda_via'];
+    if (ia.tipoConfianca >= 0.7) {
+      // A IA nunca baixa o risco: se as regras viram um tipo perigoso e ela não, vale o das regras e uma pessoa confere.
+      const remetenteOk = confere === true && !/https?:\/\/|www\./i.test(`${c.assunto} ${c.texto}`) && !PADROES_INJECAO.test(`${c.assunto} ${c.texto}`);
+      if (PERIGOSOS.includes(porRegras.tipo) && !PERIGOSOS.includes(ia.tipo)) divergencia = true;
+      // Sem sinal hostil, remetente do cadastro, a IA sozinha não promove a mensagem a phishing: uma pessoa confere.
+      else if (ia.tipo === 'phishing' && remetenteOk) divergencia = true;
+      else {
+        tipo = ia.tipo as TipoMensagem;
+        confBase = ia.tipoConfianca;
+      }
+    } else if (!(porRegras.tipo === 'boleto_novo' && confere === true)) {
+      // Confiança baixa da IA pede revisão, exceto na rotina: boleto novo de remetente do cadastro.
+      confBase = Math.min(confBase, ia.tipoConfianca);
+    }
+  }
   const sinais = new Set<SinalMensagem>();
   const textoTotal = `${c.assunto} ${c.texto}`;
   const tn = nomeComparavel(textoTotal).toLowerCase();
@@ -139,6 +163,7 @@ export function lerMensagem(c: Comunicacao, idx: Indices): Leitura {
   const executivo = PALAVRA_EXECUTIVO.test(`${c.nome_remetente} ${c.texto.slice(-160)}`) && !interno;
   if (executivo) sinais.add('personificacao_executivo');
   if (urgente && (foraProc || executivo)) sinais.add('pagamento_urgente_fora_do_processo');
+  if (ia?.foraDoProcesso) sinais.add('pagamento_urgente_fora_do_processo');
 
   if (f && boletos.length) {
     const hist = idx.bancosDeCobrancaHistoricos(raizCnpj(f.cnpj));
@@ -157,7 +182,7 @@ export function lerMensagem(c: Comunicacao, idx: Indices): Leitura {
   else if (foraDoProcesso || tipoFinal === 'phishing' || executivo) risco = 'alerta';
   else if (canalEstranho && (tipoFinal === 'segunda_via' || tipoFinal === 'boleto_novo')) risco = 'alerta';
 
-  const confianca = sinais.has('instrucao_ao_agente') ? Math.min(confBase, 0.6) : confBase;
+  const confianca = sinais.has('instrucao_ao_agente') || divergencia ? Math.min(confBase, 0.6) : confBase;
   return {
     comunicacaoId: c.comunicacao_id,
     canal: c.canal,
@@ -172,7 +197,8 @@ export function lerMensagem(c: Comunicacao, idx: Indices): Leitura {
     sinais: [...sinais],
     confianca,
     revisaoHumana: confianca < 0.7 || sinais.has('instrucao_ao_agente'),
-    modelo: 'regras',
+    modelo: ia?.uso.length ? `${ia.uso[0].modelo}+regras` : 'regras',
+    ia: ia?.uso ?? [],
     risco,
     resumo: `${tipoFinal.replace(/_/g, ' ')}${f ? ` · ${f.nome_fantasia}` : ''}${sinais.size ? ` · sinais: ${[...sinais].join(', ')}` : ''}`,
   };

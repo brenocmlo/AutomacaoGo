@@ -15,12 +15,18 @@ export interface ContaDemo {
 export const emailDemo = (nome: string) =>
   `${nomeComparavel(nome).toLowerCase().split(' ').filter(Boolean).join('.')}@example.com`;
 
+/**
+ * Gestores de contrato (papel consulta) mantidos na demo: PS10 (22 contratos) e PS11 (15).
+ * Dois, para a bateria de RLS provar que um gestor não vê os contratos do outro.
+ */
+export const PESSOAS_CONSULTA_DEMO = ['PS10', 'PS11'];
+
 export const EMAIL_ADMIN_PADRAO = 'admin.simulacao@example.com';
 
 /**
  * Contas humanas de demonstração, derivadas da base (sem lista fixa):
  *  - aprovador: usuários ativos do ERP com perfil aprovador/diretoria
- *  - consulta : demais pessoas acionáveis de politicas.csv
+ *  - consulta : gestores de contrato listados em PESSOAS_CONSULTA_DEMO
  *  - admin    : conduz a simulação
  */
 export function contasDemoHumanas(base: BaseEntrada, emailAdmin = EMAIL_ADMIN_PADRAO): ContaDemo[] {
@@ -33,11 +39,11 @@ export function contasDemoHumanas(base: BaseEntrada, emailAdmin = EMAIL_ADMIN_PA
     if (u.pessoa_id) pessoas.add(u.pessoa_id);
   }
   for (const p of base.politicas.pessoas) {
-    if (pessoas.has(p.pessoaId)) continue;
+    if (pessoas.has(p.pessoaId) || !PESSOAS_CONSULTA_DEMO.includes(p.pessoaId)) continue;
     const u = base.usuarios.find((x) => x.pessoa_id === p.pessoaId);
     out.push({ email: emailDemo(p.nome), nome: p.nome, papel: 'consulta', alcada: 0, pessoa_id: p.pessoaId, login_origem: u?.login ?? null });
     pessoas.add(p.pessoaId);
   }
-  out.push({ email: emailAdmin, nome: 'Administração da simulação', papel: 'admin', alcada: 0, pessoa_id: null, login_origem: null });
+  out.push({ email: emailAdmin, nome: 'Administração da simulação', papel: 'admin', alcada: null, pessoa_id: null, login_origem: null });
   return out;
 }

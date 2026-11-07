@@ -3,6 +3,7 @@ import type { HoraSimulada } from '@/lib/clock/relogio';
 import type { ConfigGoAudit } from '@/lib/config/config';
 import type { Indices } from '@/lib/data/indices';
 import type { Leitura } from '@/lib/mensagens/leitor';
+import type { ResultadoIA } from '@/lib/mensagens/ia';
 import { todas } from '@/lib/supabase/paginacao';
 
 /**
@@ -17,6 +18,7 @@ export interface ResultadoLeitor {
   novas: number;
   emRevisao: number;
   comRisco: number;
+  ia: ResultadoIA;
 }
 
 function partes<T>(itens: T[], n = 200): T[][] {
@@ -25,10 +27,10 @@ function partes<T>(itens: T[], n = 200): T[][] {
   return out;
 }
 
-export async function executarLeitor(cliente: SupabaseClient, sim: string, hora: HoraSimulada, idx: Indices): Promise<ResultadoLeitor> {
+export async function executarLeitor(cliente: SupabaseClient, sim: string, hora: HoraSimulada, idx: Indices, ia: ResultadoIA): Promise<ResultadoLeitor> {
   const horaTs = `${hora}:00`;
   const leituras = idx.leituras;
-  const r: ResultadoLeitor = { lidas: leituras.length, novas: 0, emRevisao: 0, comRisco: 0 };
+  const r: ResultadoLeitor = { lidas: leituras.length, novas: 0, emRevisao: 0, comRisco: 0, ia };
   if (!leituras.length) return r;
 
   // A conta do leitor não lê a tabela de volta: as chaves únicas garantem a idempotência.
@@ -37,7 +39,7 @@ export async function executarLeitor(cliente: SupabaseClient, sim: string, hora:
     comunicacao_id: l.comunicacaoId,
     canal: l.canal,
     tipo: l.tipo,
-    dados: { urgencia: l.urgencia, fora_do_processo: l.foraDoProcesso, fornecedor_id: l.fornecedorId, nf: l.nfCitada, risco: l.risco, boletos: l.boletos, resumo: l.resumo },
+    dados: { urgencia: l.urgencia, fora_do_processo: l.foraDoProcesso, fornecedor_id: l.fornecedorId, nf: l.nfCitada, risco: l.risco, boletos: l.boletos, resumo: l.resumo, ia: l.ia },
     remetente_confere: l.remetenteConfere,
     sinais: l.sinais,
     confianca: l.confianca,
@@ -70,6 +72,19 @@ export async function executarLeitor(cliente: SupabaseClient, sim: string, hora:
       { onConflict: 'simulacao_id,chave', ignoreDuplicates: true },
     );
     if (error) throw new Error(`log_auditoria (leitor): ${error.message}`);
+  }
+  // Custo de IA visível (princípio 8): modelo, tokens e custo estimado de cada ciclo que chamou o proxy.
+  if (ia.chamadas || ia.falhas) {
+    const { error } = await cliente.from('log_auditoria').upsert(
+      {
+        simulacao_id: sim, data_hora_simulada: horaTs, ator_tipo: 'leitor_mensagens', acao: 'chamou o AI Proxy', entidade: 'ciclo', entidade_id: hora,
+        motivo: `${ia.chamadas} chamadas, ${ia.falhas} falhas; ${ia.tokensEntrada} tokens de entrada, ${ia.tokensSaida} de saída; custo estimado US$ ${ia.custoUsd.toFixed(5)}`,
+        tokens_entrada: ia.tokensEntrada, tokens_saida: ia.tokensSaida, custo_usd: ia.custoUsd,
+        chave: `leitor-ia|${hora}`,
+      },
+      { onConflict: 'simulacao_id,chave', ignoreDuplicates: true },
+    );
+    if (error) throw new Error(`log_auditoria (ia): ${error.message}`);
   }
   return r;
 }

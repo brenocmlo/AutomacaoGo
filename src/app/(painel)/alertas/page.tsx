@@ -10,7 +10,7 @@ export default async function Alertas({ searchParams }: PageProps<'/alertas'>) {
     return <Card className="mx-auto max-w-lg p-6 text-sm text-muted">Alertas e caixa de entrada exigem o Supabase conectado.</Card>;
   }
   const p = await painel();
-  const ehAprovador = p.usuario?.papel === 'aprovador';
+  const ehAprovador = p.usuario?.papel === 'aprovador' || p.usuario?.papel === 'admin';
   const [notificacoes, alertas, pendentes] = await Promise.all([
     caixaDeEntrada(p),
     alertasAbertos(p),

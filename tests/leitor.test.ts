@@ -73,7 +73,8 @@ describe('leitor de mensagens (A3)', () => {
   });
 
   it('mensagem rotineira de fornecedor do cadastro não gera risco', () => {
-    const rotina = idx.leituras.filter((l) => l.tipo === 'boleto_novo' && l.remetenteConfere);
+    // A base da demo é enxuta (sem as ~250 mensagens de fundo): a rotina vem da base original.
+    const rotina = new Indices(carregarBase(path.join(raizProjeto(), 'data', 'base'))).leituras.filter((l) => l.tipo === 'boleto_novo' && l.remetenteConfere);
     expect(rotina.length).toBeGreaterThan(100);
     expect(rotina.every((l) => l.risco === 'nenhum')).toBe(true);
   });

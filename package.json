@@ -12,6 +12,7 @@
                     "test:rls":  "vitest run --config vitest.rls.config.mts",
                     "cenarios:gerar":  "tsx scripts/gerar-cenarios.ts",
                     "demo:montar":  "tsx scripts/montar-demo.ts",
+                    "demo:aquecer":  "tsx scripts/aquecer-ia.ts",
                     "relatorio":  "tsx scripts/relatorio-base.ts",
                     "seed:usuarios":  "tsx scripts/carregar-usuarios.ts",
                     "db:link":  "supabase link",

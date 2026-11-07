@@ -8,7 +8,8 @@ MVP do desafio **Pagamentos** do GoHacks Talent 2026: a cada hora simulada, conf
 npm install
 npm test                 # normalizadores, ligação da base, cenários C01–C29, critérios de contratos e migrações/RLS offline (PGlite)
 npm run cenarios:gerar   # regenera data/cenarios a partir da base
-npm run demo:montar      # data/base + data/cenarios → data/demo
+npm run demo:montar      # data/base + data/cenarios → data/demo (enxuta: só os cenários; --completa mantém a base inteira)
+npm run demo:aquecer     # pré-aquece a leitura de mensagens por IA (cache em disco) antes da apresentação
 npm run relatorio        # motor sobre a base original: destinos, regras e títulos não ligados
 ```
 
@@ -17,8 +18,12 @@ npm run relatorio        # motor sobre a base original: destinos, regras e títu
 1. Crie o projeto e copie `.env.example` para `.env.local`, preenchendo as chaves e as senhas de demo.
 2. `npx supabase login`, depois `npm run db:link -- --project-ref <ref>` e `npm run db:push`.
 3. No painel: **Authentication → Hooks → Customize Access Token** → função `public.custom_access_token_hook`.
-4. `npm run seed:usuarios` cria as contas de demonstração (e-mails `@example.com`).
+4. `npm run seed:usuarios` cria as contas de demonstração (e-mails `@example.com`): aprovador simples (Cláudia Ferraz), coordenadora PS01 (Renata Paiva), diretora PS03 (Helena Duarte), dois gestores de contrato com papel consulta (PS10 Tiago Lins, PS11 Paula Viana), admin e os 3 agentes.
 5. `npm run test:rls` roda a bateria de RLS contra o projeto real.
+
+## Demonstração
+
+O passo a passo para quem apresenta (horários do relógio, contas por papel, cenários C01–C29, falas, checklist e plano B) está em [docs/roteiro-demo.md](docs/roteiro-demo.md). A base da demo (`data/demo`) é enxuta: 28 títulos, um exemplo de cada caso. C05 usa um WhatsApp **fictício** (a base original só tem e-mails). "Nova simulação" abre uma simulação nova (o log e as contas ficam) em poucos segundos.
 
 ## Estrutura
 
@@ -54,7 +59,7 @@ tests/           Vitest; tests/rls roda contra o Supabase real
 | `supabase/seed/` → `scripts/carregar-usuarios.ts` | Criar usuários exige a API admin do Auth, o que não é possível em SQL puro. |
 | `supabase/tests/` guarda o stub, e os testes ficam em `tests/` | Os testes de RLS rodam em duas camadas: offline com PGlite em `tests/migracoes.test.ts`, a cada `npm test`, e contra a nuvem em `tests/rls/`. Não é preciso pgTAP nem Docker. |
 | `scripts/gerar-cenarios.ts` | Os cenários precisam de linha digitável, chave de acesso e CNPJ de filial com dígitos verificadores válidos, o que é inviável de digitar à mão. O gerador escolhe as entidades por critério, sem IDs fixos, e grava CSVs versionados. |
-| `src/lib/ai` ainda não existe | Entra com o leitor de mensagens (A3). |
+| `src/lib/ai/proxy.ts` | Cliente do AI Proxy (token só no servidor). Jev (`/v1/systemone`) recebe perguntas `choice` com `criteria` e devolve escolha, confiança e custo; `glm-5.3-flash` só extrai boleto que o regex não resolveu. 429/503 têm nova tentativa com espera crescente; falha cai nas regras. `GOAUDIT_IA=desligada` desliga a IA. |
 
 ## Decisões de desenho
 
@@ -66,7 +71,7 @@ tests/           Vitest; tests/rls roda contra o Supabase real
 - **Chegada por carimbo de tempo:** cada arquivo é filtrado pela hora simulada. Extratos, que só têm data, ficam visíveis a partir de `chegada.extrato_hora_disponivel`.
 - **Duplicidade:** só a cópia (lançada depois) é retirada, e o original segue. **Fracionamento** soma uma vez por parcela, porque cópias da mesma parcela já são caso de R01.
 - **R13:** usuário desligado retira o título. Admissão recente só gera alerta, para não travar os títulos legítimos dos analistas novos.
-- **R14** entra com o leitor de mensagens.
+- **R14 (leitor de mensagens):** troca de conta ou segunda via de canal fora do cadastro retira os títulos do fornecedor; pagamento urgente fora do processo e phishing só alertam. O leitor roda sem IA (regras e regex) e a IA refina o tipo: ela nunca baixa um risco que as regras viram, e sozinha não promove mensagem de remetente do cadastro a phishing. O texto da mensagem vai ao modelo como dado delimitado e não vai para o banco. Tokens e custo de cada ciclo ficam no log (`leitor-ia|<hora>`).
 
 ## Contratos (vínculo e desvio)
 
@@ -81,3 +86,8 @@ A antiga R12 (variação mensal) foi substituída pelo módulo `src/lib/contrato
 - **Supabase**: migração 7 cria `vinculos_contrato` e `competencias_contrato` e acrescenta `contrato_id`, `competencia` e `gestor_pessoa_id` em `alertas` (tipo `contrato`). O gestor de área (papel `consulta`) vê só os contratos em que é gestor; o leitor de mensagens não vê nada.
 - **Índices de reajuste**: a base não traz; `data/complementos/indices_reajuste.csv` é fictício.
 - O cenário C13 (aluguel acima do contrato) da v3 é coberto por C19.
+
+
+## Equipe
+
+A administração tem a tela **Equipe** (`/equipe`, só admin): lista as contas, cria acesso com nome, e-mail, senha inicial, função (aprovador, consulta ou admin), alçada e pessoa da política (PS), e remove acessos. Quem já deixou rastro (aprovações, log) é desativado em vez de apagado. É o único ponto que usa a `service_role` em execução: Server Actions em `src/app/(painel)/equipe/acoes.ts`, que conferem no JWT que quem chama é admin. As contas dos agentes continuam vindo do `.env`.

@@ -78,7 +78,8 @@ export function decidirDestino(
     const aprovadores = dupla
       ? ['aprovador', valor > pol.alcadas.aprovadorAte ? pol.alcadas.diretoriaPessoaId : pol.alcadas.coordenacaoPessoaId]
       : [nivel === 'diretoria' ? pol.alcadas.diretoriaPessoaId : 'aprovador'];
-    const margem = config.aprovacao.margem_antes_fechamento_min;
+    // A margem nunca é menor que o passo do relógio: senão o ciclo pula a janela e o título segue sem aprovação.
+    const margem = Math.max(config.aprovacao.margem_antes_fechamento_min, config.relogio.passo_minutos);
     const motivo = aprov.map((f) => `${f.codigo}: ${f.motivo}`).join(' ');
     const notificar = resolverPessoas(aprov, d, config);
     const tipo = dupla ? 'dupla' : aprov.some((f) => f.aprovacao === 'alcada_superior') ? 'alcada_superior' : 'simples';

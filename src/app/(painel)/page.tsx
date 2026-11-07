@@ -3,6 +3,8 @@ import { ArrowRight, Landmark, PlayCircle } from 'lucide-react';
 import { Badge, Card, CardTitulo, Stat, URGENCIAS, brl, destinoUi, duracao, horaBR } from '@/components/ui';
 import { reiniciarRelogio } from '@/app/acoes';
 import { nomeFornecedor, painel, resumo, type DestinoPainel } from '@/lib/painel/dados';
+import { calcularPlacar } from '@/lib/painel/placar';
+import { custoIA, usd } from '@/lib/painel/log';
 import { supabaseConfigurado } from '@/lib/supabase/config';
 
 export default async function VisaoGeral() {
@@ -26,6 +28,7 @@ export default async function VisaoGeral() {
   }
 
   const r = resumo(p);
+  const [placar, ia] = await Promise.all([calcularPlacar(p), custoIA(p)]);
   const destaques = p.avaliacoes
     .filter((a) => ['AGUARDANDO_APROVACAO', 'RETIRADO'].includes(a.decisao.destino))
     .slice(0, 8);
@@ -65,8 +68,34 @@ export default async function VisaoGeral() {
         <Stat rotulo="Montante protegido" valor={brl(r.montanteProtegido, true)} detalhe="retirado antes de sair" tom="ok" />
         <Stat rotulo="Montante em risco" valor={brl(r.montanteEmRisco, true)} detalhe="aguardando decisão humana" tom="warn" />
         <Stat rotulo="Aprovados por humanos" valor={r.porDestino.APROVADO.qtd + r.porDestino.DEVOLVIDO.qtd} detalhe={`${r.porDestino.RECUSADO.qtd} recusados`} tom="info" />
-        <Stat rotulo="Custo de IA" valor="US$ 0,00" detalhe="regras rodam sem IA" />
+        <Stat rotulo="Custo de IA" valor={usd(ia.total.custoUsd)} detalhe={ia.total.chamadas ? `${ia.total.chamadas} chamadas · ${(ia.total.tokensEntrada + ia.total.tokensSaida).toLocaleString('pt-BR')} tokens` : 'regras rodam sem IA'} />
       </div>
+
+      <Card>
+        <CardTitulo extra={<span className="text-xs text-muted">estimativa em R$; quanto menos negativo, melhor</span>}>Placar estimado</CardTitulo>
+        {placar.disponivel ? (
+          <div className="grid gap-px bg-border md:grid-cols-2">
+            {([['Com GoAudit', placar.com, 'ok'], ['Sem GoAudit (tesoureiro assina tudo)', placar.sem, 'danger']] as const).map(([nome, c, tom]) => (
+              <div key={nome} className="space-y-2 bg-surface p-4">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-sm font-medium">{nome}</p>
+                  <p className={`tabular text-2xl font-semibold ${tom === 'ok' ? 'text-ok' : 'text-danger'}`}>{brl(c.total)}</p>
+                </div>
+                <ul className="space-y-1 text-xs">
+                  {c.linhas.map((l) => (
+                    <li key={l.rotulo} className="flex justify-between gap-2"><span className="text-muted">{l.rotulo} ({l.detalhe})</span><span className="tabular">{brl(l.valor)}</span></li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            <p className="bg-surface px-4 pb-3 text-xs text-muted md:col-span-2">
+              Diferença a favor do GoAudit: <span className="tabular font-medium text-text">{brl(placar.com.total - placar.sem.total)}</span> · {placar.indevidosJaFechados} de {placar.indevidosTotal} títulos indevidos do gabarito já passaram do fechamento; {brl(placar.protegido, true)} barrados e {brl(placar.indevidosAindaEmRisco, true)} ainda em risco. Um atraso conta 7 dias (multa, juros e custo de relacionamento).
+            </p>
+          </div>
+        ) : (
+          <p className="p-4 text-sm text-muted">{placar.motivo}</p>
+        )}
+      </Card>
 
       <Card>
         <CardTitulo>Destino dos títulos (por valor)</CardTitulo>

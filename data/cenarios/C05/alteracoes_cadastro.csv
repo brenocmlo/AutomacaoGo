@@ -1,0 +1,4 @@
+alteracao_id,data_hora,fornecedor_id,campo,valor_anterior,valor_novo,alterado_por,origem,confirmacao_registrada,confirmacao_como
+AC900094,2026-11-02 14:45:00,FP4977,banco,612,905,usuario_03,whatsapp,não,
+AC900095,2026-11-02 14:45:00,FP4977,agencia,9860,0001,usuario_03,whatsapp,não,
+AC900096,2026-11-02 14:45:00,FP4977,conta,8504373-2,0000123-4,usuario_03,whatsapp,não,

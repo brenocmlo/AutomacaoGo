@@ -4,6 +4,8 @@ import { contexto } from '@/lib/contexto';
 import { avaliarComIndices } from '@/lib/rules/motor';
 import { todas } from '@/lib/supabase/paginacao';
 import { registrarContratos, type ResultadoContratos } from './contratos';
+import { recortarAte } from '@/lib/data/base';
+import { refinarComIA } from '@/lib/mensagens/ia';
 import { alertarGolpes, executarLeitor, type ResultadoLeitor } from './leitor';
 import { executarValidacao, type ResultadoValidacao } from './validacao';
 import { clienteAgente } from '@/lib/supabase/agentes';
@@ -66,10 +68,16 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
   try {
     const { base, config } = contexto();
     const estado = await estadoAtual(op, sim);
-    // 2–4) o que chegou até a hora + motor de regras sobre a agenda efetiva (CSV − retiradas)
+    // 2–4) o que chegou até a hora. A IA lê as mensagens novas primeiro (falha = regras, RNF13); depois o motor de regras.
+    const chegadas = recortarAte(base, hora, config.chegada.extrato_hora_disponivel).comunicacoes;
+    // O que este ciclo lê pela primeira vez nesta simulação: tudo no primeiro ciclo; depois, o que chegou desde o anterior.
+    const { data: anterior } = await op.from('ciclos').select('hora_simulada').eq('simulacao_id', sim).eq('situacao', 'concluido')
+      .lt('hora_simulada', horaTs).order('hora_simulada', { ascending: false }).limit(1).maybeSingle();
+    const desde = anterior ? paraHora(anterior.hora_simulada as string) : null;
+    const ia = await refinarComIA(chegadas, desde ? chegadas.filter((c) => paraHora(c.data_hora) > desde) : chegadas);
     const { avaliacoes, idx, contratos } = avaliarComIndices(base, config, hora, { retirados: estado.retirados });
     // 3) o leitor (conta própria, sem poder de ação) processa as mensagens novas; o R14 já usou o resultado dele
-    const leitor = await executarLeitor(await clienteAgente('leitor'), sim, hora, idx);
+    const leitor = await executarLeitor(await clienteAgente('leitor'), sim, hora, idx, ia);
     const lancadoPor = new Map(base.titulos.map((t) => [t.titulo_id, t.lancado_por]));
     const donoAlerta = (cod: string) => config.acionamento.por_regra[cod]?.find((p) => !p.startsWith('@')) ?? null;
 
