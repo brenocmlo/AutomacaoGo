@@ -11,6 +11,8 @@ import type { Painel } from './dados';
  * Placar estimado (seção 9). O gabarito considerado é o da base montada (data/demo/cenarios_esperados.csv,
  * só os cenários presentes na base); sem ele, cai no gabarito inteiro de data/cenarios.
  *   placar = -(dinheiro que saiu indevidamente + custo de atrasar pagamento legítimo + acionamentos desnecessários)
+ * "Sem GoAudit" é uma PROJEÇÃO: todo título indevido do gabarito sairia (o tesoureiro assina tudo), mesmo
+ * que o lote ainda não tenha fechado. "Com GoAudit" só conta o que de fato foi enviado ao banco.
  * "Indevido" vem do gabarito dos cenários plantados (data/cenarios/cenarios_esperados.csv): títulos
  * esperados como RETIRADO, exceto os que a validação deve devolver (falso positivo, C17). Títulos
  * fora do gabarito contam como legítimos. É uma estimativa para a demo, não uma apuração contábil.
@@ -86,9 +88,9 @@ export async function calcularPlacar(p: Painel): Promise<Placar> {
     const retido = l.destino === 'RETIRADO' || l.destino === 'RECUSADO';
     if (ruins.has(l.titulo_id)) {
       nRuins++;
+      saiuSem += v; // sem o GoAudit, sairia
       if (fechado) {
         nRuinsFechados++;
-        saiuSem += v;
         if (l.destino === 'ENVIADO') saiuCom += v;
         else if (retido) protegido += v;
       } else if (!retido) emRisco += v;
@@ -103,10 +105,10 @@ export async function calcularPlacar(p: Painel): Promise<Placar> {
     }
   }
 
-  const cenario = (saiu: number, atr: number, ac: number, nAtr: number, nAc: number): Cenario => ({
+  const cenario = (saiu: number, atr: number, ac: number, nAtr: number, nAc: number, projecao = false): Cenario => ({
     indevidoSaiu: saiu, atraso: atr, acionamentos: ac, total: -(saiu + atr + ac),
     linhas: [
-      { rotulo: 'Dinheiro que saiu indevidamente', valor: saiu, detalhe: 'títulos do gabarito enviados ao banco' },
+      { rotulo: projecao ? 'Dinheiro que sairia indevidamente' : 'Dinheiro que saiu indevidamente', valor: saiu, detalhe: projecao ? `${nRuins} títulos indevidos do gabarito, mesmo antes do fechamento` : 'títulos do gabarito enviados ao banco' },
       { rotulo: 'Atraso de pagamento legítimo', valor: atr, detalhe: `${nAtr} títulos retidos após o fechamento` },
       { rotulo: 'Acionamentos desnecessários', valor: ac, detalhe: `${nAc} retenções de título legítimo` },
     ],
@@ -114,7 +116,7 @@ export async function calcularPlacar(p: Painel): Promise<Placar> {
   return {
     disponivel: true,
     com: cenario(saiuCom, atrasoCom, acion, nAtrasados, nAcion),
-    sem: cenario(saiuSem, 0, 0, 0, 0),
+    sem: cenario(saiuSem, 0, 0, 0, 0, true),
     protegido,
     indevidosTotal: nRuins,
     indevidosJaFechados: nRuinsFechados,

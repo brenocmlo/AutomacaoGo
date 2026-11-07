@@ -89,7 +89,7 @@ export default async function VisaoGeral() {
               </div>
             ))}
             <p className="bg-surface px-4 pb-3 text-xs text-muted md:col-span-2">
-              Diferença a favor do GoAudit: <span className="tabular font-medium text-text">{brl(placar.com.total - placar.sem.total)}</span> · {placar.indevidosJaFechados} de {placar.indevidosTotal} títulos indevidos do gabarito já passaram do fechamento; {brl(placar.protegido, true)} barrados e {brl(placar.indevidosAindaEmRisco, true)} ainda em risco. Um atraso conta 7 dias (multa, juros e custo de relacionamento).
+              Diferença a favor do GoAudit: <span className="tabular font-medium text-text">{brl(placar.com.total - placar.sem.total)}</span> · O placar sem GoAudit é uma projeção: tudo o que é indevido sairia, mesmo antes do fechamento do lote. Dos {placar.indevidosTotal} títulos indevidos do gabarito, {brl(placar.protegido, true)} já foram barrados, {brl(placar.indevidosAindaEmRisco, true)} ainda estão em risco e {placar.indevidosJaFechados} já passaram do fechamento. Um atraso conta 7 dias (multa, juros e custo de relacionamento).
             </p>
           </div>
         ) : (
