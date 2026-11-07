@@ -11,7 +11,7 @@ export function GraficoContrato({ competencias }: { competencias: CompetenciaVis
   const comps = competencias.slice(-12);
   if (comps.length === 0) return <p className="text-sm text-muted">Nenhuma competência registrada ainda.</p>;
 
-  const L = 64, R = 12, T = 12, B = 28;
+  const L = 72, R = 12, T = 20, B = 28;
   const coluna = 56;
   const W = L + R + comps.length * coluna;
   const H = 220;
@@ -27,7 +27,7 @@ export function GraficoContrato({ competencias }: { competencias: CompetenciaVis
         {ticks.map((v) => (
           <g key={v}>
             <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="var(--border)" strokeWidth={1} />
-            <text x={L - 6} y={y(v) + 3} textAnchor="end" fontSize={10} fill="var(--muted)">{brl(v, true)}</text>
+            <text x={L - 6} y={y(v) + 3} textAnchor="end" fontSize={12} fill="var(--muted)" className="tabular">{brl(v, true)}</text>
           </g>
         ))}
         {comps.map((c, i) => {
@@ -58,7 +58,10 @@ export function GraficoContrato({ competencias }: { competencias: CompetenciaVis
               {c.valorEsperado != null && (
                 <line x1={cx - barra / 2 - 8} x2={cx + barra / 2 + 8} y1={y(c.valorEsperado)} y2={y(c.valorEsperado)} stroke="var(--text)" strokeWidth={2} />
               )}
-              <text x={cx} y={H - 10} textAnchor="middle" fontSize={10} fill="var(--muted)">{c.competencia.slice(5)}/{c.competencia.slice(2, 4)}</text>
+              {fora && c.valorCobrado > 0 && (
+                <text x={cx} y={y(c.valorCobrado) - 4} textAnchor="middle" fontSize={12} fontWeight={500} fill="var(--danger)">fora</text>
+              )}
+              <text x={cx} y={H - 10} textAnchor="middle" fontSize={12} fill="var(--muted)" className="tabular">{c.competencia.slice(5)}/{c.competencia.slice(2, 4)}</text>
             </g>
           );
         })}

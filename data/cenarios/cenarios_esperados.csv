@@ -3,7 +3,7 @@ C01,"Mesmo título lançado duas vezes, NF digitada com zeros à esquerda e com 
 C01,"Mesmo título lançado duas vezes, NF digitada com zeros à esquerda e com série",2026-11-02T08:00,,,,,,,,TP900004,R01,RETIRADO,PS01
 C02,Título com um zero a mais (10× a duplicata da NF),2026-11-02T08:00,,,,,,,,TP900008,R03 R11,RETIRADO,PS01
 C03,Título já pago por PIX manual (extrato do Litoral) e ainda agendado,2026-11-02T08:00,,,,,,,,TP900011,R02,RETIRADO,PS02
-C04,Boleto de segunda via com beneficiário de outro CNPJ e banco diferente do histórico,2026-11-02T08:00,,,,,,,,TP900019,R06,RETIRADO,PS01 PS08
+C04,Boleto de segunda via com beneficiário de outro CNPJ e banco diferente do histórico,2026-11-02T08:00,,,,,,,,TP900019,R06 R14,RETIRADO,PS01 PS08
 C08,NF 4% acima da OC de embalagem,2026-11-02T08:00,,,,,,,,TP900024,R04,RETIRADO,PS04
 C09,"NF 1,5% acima da OC (dentro da tolerância)",2026-11-02T08:00,,,,,,,,TP900028,,LIBERADO_AUTOMATICO,
 C10,"Título pago com 10 dias de atraso, com multa e juros dentro do teto",2026-11-02T08:00,,,,,,,,TP900031,,LIBERADO_AUTOMATICO,

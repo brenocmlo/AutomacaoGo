@@ -1,4 +1,5 @@
 import type { BaseEntrada } from './base';
+import { lerMensagem, type Leitura } from '@/lib/mensagens/leitor';
 import type {
   AgendaItem, AlteracaoCadastro, BoletoDDA, Contrato, Duplicata, Fornecedor, NotaFiscal,
   PagamentoObservado, PedidoCompra, Recebimento, Titulo, Usuario,
@@ -107,6 +108,19 @@ export class Indices {
     const s = this.bancosCobranca.get(raiz) ?? new Set<string>();
     s.add(banco);
     this.bancosCobranca.set(raiz, s);
+  }
+
+  private _leituras: Leitura[] | null = null;
+  private _leiturasPorFornecedor: Map<string, Leitura[]> | null = null;
+
+  /** Resultado do leitor (sem IA) para todas as mensagens que já chegaram. Calculado sob demanda. */
+  get leituras(): Leitura[] {
+    return (this._leituras ??= this.base.comunicacoes.map((c) => lerMensagem(c, this)));
+  }
+
+  leiturasDoFornecedor(fornecedorId: string): Leitura[] {
+    this._leiturasPorFornecedor ??= agrupar(this.leituras, (l) => l.fornecedorId);
+    return this._leiturasPorFornecedor.get(fornecedorId) ?? [];
   }
 
   bancosDeCobrancaHistoricos(raiz: string): Set<string> {

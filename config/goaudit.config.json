@@ -26,7 +26,8 @@
     "R03": { "tolerancia_arredondamento": 0.10 },
     "R07": { "janela_dias": 30 },
     "R11": { "multiplo_mediana": 5, "minimo_historico": 3 },
-    "R13": { "dias_admissao_recente": 45, "valor_alto": 20000 }
+    "R13": { "dias_admissao_recente": 45, "valor_alto": 20000 },
+    "R14": { "janela_dias": 14 }
   },
   "contratos": {
     "$comentario": "Vínculo título × contrato, valor esperado por competência e desvios D01–D10. Substitui a antiga R12 (variação mensal). Categorias não listadas em classe_por_categoria são contratos de valor fixo.",
@@ -67,6 +68,7 @@
       "utilidades": "PS10",
       "ti_saas": "PS11"
     },
+    "golpe_executivo": ["PS03", "PS08"],
     "por_regra": {
       "R01": ["PS01"],
       "R02": ["PS02"],

@@ -365,7 +365,7 @@ cenario('C04', 'Boleto de segunda via com beneficiário de outro CNPJ e banco di
     texto: `Prezados, houve atualização no nosso banco de cobrança. Favor desconsiderar o boleto anterior e pagar a segunda via em anexo. Att.`,
     anexos: `boleto_2via_NF${nf.num}.pdf (banco ${bancoGolpe}, beneficiário ${golpista.nome}, CNPJ ${golpista.cnpj}, valor R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}, vencimento ${VENC.split('-').reverse().join('/')}, linha digitável ${bol.linha})`,
   });
-  esp({ titulo_id: t.id, regras_esperadas: 'R06', destino_esperado: 'RETIRADO', notificar_esperado: 'PS01 PS08' });
+  esp({ titulo_id: t.id, regras_esperadas: 'R06 R14', destino_esperado: 'RETIRADO', notificar_esperado: 'PS01 PS08' });
 });
 
 // C08 · NF 4% acima da OC de embalagem

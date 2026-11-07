@@ -83,7 +83,7 @@ export default async function Contratos({ searchParams }: PageProps<'/contratos'
                   </td>
                   <td className="max-w-56 truncate px-3 py-2" title={l.fornecedorNome}>{l.fornecedorNome}</td>
                   <td className="px-3 py-2 text-xs">{l.contrato.gestor_contrato}<span className="text-muted"> · {l.contrato.gestor_pessoa_id}</span></td>
-                  <td className="tabular px-3 py-2 text-right">{brl(l.valorMensal)}{l.classe !== 'fixo' && <span className="block text-[10px] text-muted">estimativa</span>}</td>
+                  <td className="tabular px-3 py-2 text-right">{brl(l.valorMensal)}{l.classe !== 'fixo' && <span className="block text-xs text-muted">estimativa</span>}</td>
                   <td className="px-3 py-2 text-xs">{l.atual?.competencia ?? '—'}</td>
                   <td className="tabular px-3 py-2 text-right">{brl(l.atual?.valorEsperado)}</td>
                   <td className="tabular px-3 py-2 text-right">{l.atual?.qtdTitulos ? brl(l.atual.valorCobrado) : '—'}</td>

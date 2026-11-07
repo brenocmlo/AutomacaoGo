@@ -10,15 +10,16 @@ import { r09AprovacaoDupla } from './r09-aprovacao-dupla';
 import { r10Recebimento } from './r10-recebimento';
 import { r11ValorAtipico } from './r11-valor-atipico';
 import { r13Lancador } from './r13-lancador';
+import { r14Mensagem } from './r14-mensagem';
 import type { CodigoDesvio } from '@/lib/contratos/tipos';
 import type { CodigoRegra, Regra } from './tipos';
 
 /**
- * Regras por título implementadas. R14 (mensagem) entra com o leitor. A antiga R12 (variação mensal)
+ * Regras por título implementadas. A antiga R12 (variação mensal)
  * foi substituída pelos desvios contratuais D01–D10, calculados por competência em src/lib/contratos.
  */
 export const REGRAS: Record<
-  Exclude<CodigoRegra, 'R14' | CodigoDesvio>,
+  Exclude<CodigoRegra, CodigoDesvio>,
   Regra
 > = {
   R01: r01Duplicidade,
@@ -33,6 +34,7 @@ export const REGRAS: Record<
   R10: r10Recebimento,
   R11: r11ValorAtipico,
   R13: r13Lancador,
+  R14: r14Mensagem,
 };
 
 export * from './tipos';

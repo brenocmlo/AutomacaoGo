@@ -35,7 +35,7 @@ export default async function Contrato({ params }: PageProps<'/contratos/[id]'>)
       <Link href="/contratos" className="inline-flex items-center gap-1 text-xs text-muted hover:text-text"><ArrowLeft className="size-3.5" />Contratos</Link>
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-xl font-semibold">{l.fornecedorNome}</h1>
-        <span className="font-mono text-sm text-muted">{c.contrato_id}</span>
+        <span className="font-mono text-xs text-muted">{c.contrato_id}</span>
         <Badge tom={SITUACOES[l.situacao].tom}>{SITUACOES[l.situacao].rotulo}</Badge>
         {l.venceOuReajustaEm30 && <Badge tom="warn">Vence ou reajusta em 30 dias</Badge>}
       </div>

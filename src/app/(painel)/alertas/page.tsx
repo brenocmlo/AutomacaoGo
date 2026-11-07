@@ -38,8 +38,8 @@ export default async function Alertas({ searchParams }: PageProps<'/alertas'>) {
           <CardTitulo extra={<Badge tom="info">{pendentes.length} pendentes</Badge>}>Aprovações</CardTitulo>
           {cabem.length > 0 && (
             <div className="flex items-center gap-3 border-b border-border px-4 py-2 text-xs">
-              <Link href="/alertas" className={soContrato ? 'text-muted hover:text-text' : 'font-medium text-accent'}>Todos os conferidos ({cabem.length})</Link>
-              <Link href="/alertas?so=contrato" className={soContrato ? 'font-medium text-accent' : 'text-muted hover:text-text'}>Só conforme contrato ({qtdConformes})</Link>
+              <Link href="/alertas" aria-current={soContrato ? undefined : 'page'} className={soContrato ? 'text-muted hover:text-text' : 'font-medium text-accent'}>Todos os conferidos ({cabem.length})</Link>
+              <Link href="/alertas?so=contrato" aria-current={soContrato ? 'page' : undefined} className={soContrato ? 'font-medium text-accent' : 'text-muted hover:text-text'}>Só conforme contrato ({qtdConformes})</Link>
             </div>
           )}
           {emLote.length > 0 && (

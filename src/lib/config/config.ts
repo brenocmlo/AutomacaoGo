@@ -16,6 +16,7 @@ export interface ConfigGoAudit {
     R07: { janela_dias: number };
     R11: { multiplo_mediana: number; minimo_historico: number };
     R13: { dias_admissao_recente: number; valor_alto: number };
+    R14: { janela_dias: number };
   };
   contratos: {
     classe_por_categoria: Record<string, 'utilidade' | 'frete'>;
@@ -31,6 +32,8 @@ export interface ConfigGoAudit {
   acionamento: {
     dono_por_categoria: Record<string, string>;
     por_regra: Record<string, string[]>;
+    /** Quem recebe o alerta quando a mensagem se passa por executivo (C06). */
+    golpe_executivo?: string[];
   };
 }
 
