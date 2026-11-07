@@ -257,3 +257,36 @@ describe('notificações e alertas', () => {
     expect(alheio.data ?? []).toHaveLength(0);
   });
 });
+
+describe('contratos (gestor vê só os próprios)', () => {
+  it('operação grava competências; gestor de área vê só as dele; aprovador vê todas; leitor nada', async () => {
+    const ct = tid('CT');
+    const { error } = await c.operacao.from('competencias_contrato').insert([
+      { simulacao_id: sim, contrato_id: `${ct}-1`, competencia: '2026-11', classe: 'fixo', gestor_pessoa_id: U.consulta.pessoa_id, situacao: 'conforme', hora_simulada: HORA },
+      { simulacao_id: sim, contrato_id: `${ct}-2`, competencia: '2026-11', classe: 'fixo', gestor_pessoa_id: U.consulta2.pessoa_id, situacao: 'conforme', hora_simulada: HORA },
+    ]);
+    expect(error).toBeNull();
+    const ver = async (cli: SupabaseClient) => ((await cli.from('competencias_contrato').select('contrato_id').eq('simulacao_id', sim).order('contrato_id')).data ?? []).map((r) => r.contrato_id);
+    expect(await ver(c.consulta)).toEqual([`${ct}-1`]);
+    expect(await ver(c.consulta2)).toEqual([`${ct}-2`]);
+    expect(await ver(c.coordenacao)).toEqual([`${ct}-1`, `${ct}-2`]);
+    expect(await ver(c.leitor)).toEqual([]);
+  });
+  it('gestor de área NÃO grava competência nem vínculo', async () => {
+    const r1 = await c.consulta.from('competencias_contrato').insert({ simulacao_id: sim, contrato_id: tid('X'), competencia: '2026-11', classe: 'fixo', gestor_pessoa_id: U.consulta.pessoa_id, situacao: 'conforme', hora_simulada: HORA });
+    const r2 = await c.leitor.from('vinculos_contrato').insert({ simulacao_id: sim, titulo_id: tid('T'), contrato_id: 'X', metodo: 'oc_contrato', confianca: 'alta', hora_simulada: HORA });
+    expect(r1.error).not.toBeNull();
+    expect(r2.error).not.toBeNull();
+  });
+  it('alerta de contrato aparece só para o gestor do contrato (e para quem vê tudo)', async () => {
+    const chave = tid('alerta-ct');
+    const { error } = await c.operacao.from('alertas').insert([
+      { simulacao_id: sim, tipo: 'contrato', contrato_id: 'CT-A', gestor_pessoa_id: U.consulta.pessoa_id, dono_pessoa_id: U.consulta.pessoa_id, regras: ['D01'], mensagem: 'm', chave: `${chave}-1`, hora_simulada: HORA },
+      { simulacao_id: sim, tipo: 'contrato', contrato_id: 'CT-B', gestor_pessoa_id: U.consulta2.pessoa_id, dono_pessoa_id: U.consulta2.pessoa_id, regras: ['D09'], mensagem: 'm', chave: `${chave}-2`, hora_simulada: HORA },
+    ]);
+    expect(error).toBeNull();
+    const ver = async (cli: SupabaseClient) => ((await cli.from('alertas').select('chave').like('chave', `${chave}%`).order('chave')).data ?? []).map((r) => r.chave);
+    expect(await ver(c.consulta)).toEqual([`${chave}-1`]);
+    expect(await ver(c.coordenacao)).toEqual([`${chave}-1`, `${chave}-2`]);
+  });
+});

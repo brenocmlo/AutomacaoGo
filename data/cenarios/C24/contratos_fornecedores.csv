@@ -1,0 +1,2 @@
+contrato_id,fornecedor_id,oc_id,tipo,objeto,valor_mensal,valor_variavel,condicao_pagamento,dia_vencimento,forma_pagamento,inicio_vigencia,prazo,fim_vigencia_atual,indice_reajuste,mes_reajuste,data_ultimo_reajuste,aviso_previo_dias,multa_rescisoria,gestor_contrato,gestor_pessoa_id,status
+CT-9903,FP9903,OC-90070,assinatura de software,assinatura de software Painel Vivo,1890.00,não,mensal dia 5,5,ted,2024-11-01,12 meses com renovação automática,2027-10-31,IPCA,03,2026-03-01,30,1 mensalidade,Paula Viana,PS11,vigente

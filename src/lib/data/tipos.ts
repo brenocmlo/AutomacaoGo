@@ -23,9 +23,13 @@ export type PedidoCompra = Linha<
 >;
 
 export type Contrato = Linha<
-  | 'contrato_id' | 'fornecedor_id' | 'oc_id' | 'tipo' | 'valor_mensal' | 'valor_variavel' | 'dia_vencimento'
-  | 'mes_reajuste' | 'data_ultimo_reajuste' | 'gestor_pessoa_id' | 'status'
+  | 'contrato_id' | 'fornecedor_id' | 'oc_id' | 'tipo' | 'objeto' | 'valor_mensal' | 'valor_variavel'
+  | 'dia_vencimento' | 'forma_pagamento' | 'inicio_vigencia' | 'prazo' | 'fim_vigencia_atual'
+  | 'indice_reajuste' | 'mes_reajuste' | 'data_ultimo_reajuste' | 'gestor_contrato' | 'gestor_pessoa_id' | 'status'
 >;
+
+/** Arquivo FICTÍCIO (a base do desafio não traz índices): IPCA/IGP-M acumulados em 12 meses. */
+export type IndiceReajuste = Linha<'indice' | 'mes_referencia' | 'acumulado_12m' | 'ficticio'>;
 
 export type NotaFiscal = Linha<
   | 'chave_acesso' | 'modelo' | 'numero_nf' | 'serie' | 'cnpj_emitente' | 'razao_social_emitente'

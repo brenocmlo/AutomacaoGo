@@ -8,12 +8,15 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { raizProjeto } from '@/lib/config/config';
+import { carregarConfig, raizProjeto } from '@/lib/config/config';
+import { analisarContratos } from '@/lib/contratos/analise';
+import { competenciaDoVencimento, diasUteisAntes, mesDe, vencimentoNominal } from '@/lib/contratos/datas';
+import { indiceParaCompetencia } from '@/lib/contratos/indices';
 import { carregarBase } from '@/lib/data/base';
 import { escreverCsv } from '@/lib/data/csv';
 import { Indices } from '@/lib/data/indices';
 import { centavos, cnpjDigitos, nomeComparavel, numero, raizCnpj } from '@/lib/data/normalizadores';
-import type { Fornecedor, PedidoCompra } from '@/lib/data/tipos';
+import type { Contrato, Fornecedor, PedidoCompra } from '@/lib/data/tipos';
 import { CalendarioBancario, diasEntre, somarDias } from '@/lib/clock/relogio';
 import { mediana, nivelPorValor } from '@/lib/rules/auxiliares';
 
@@ -102,10 +105,11 @@ function ocsDoFornecedor(f: Fornecedor): PedidoCompra[] {
   return base.pedidos.filter((o) => raizCnpj(o.cnpj_fornecedor) === raizCnpj(f.cnpj));
 }
 
-function escolherFornecedor(criterio: { categorias: string[]; forma?: string; valorMax?: number; medianaMax?: number }): Fornecedor {
+function escolherFornecedor(criterio: { categorias: string[]; forma?: string; valorMax?: number; medianaMax?: number; comContrato?: boolean }): Fornecedor {
   const cands = base.fornecedores
     .filter((f) => criterio.categorias.includes(f.categoria) && !usados.has(f.fornecedor_id))
     .filter((f) => !criterio.forma || f.forma_pagamento_padrao === criterio.forma)
+    .filter((f) => !criterio.comContrato || !!f.contrato_id)
     .filter(semTrocaRecente)
     .filter((f) => /ativo/i.test(f.status_cadastro || 'ativo'))
     .filter((f) => ocsDoFornecedor(f).length > 0)
@@ -244,15 +248,24 @@ function valorUnico(f: Fornecedor, aprox: number): number {
 interface Esperado {
   cenario_id: string; descricao: string; hora_avaliacao: string; titulo_id: string;
   regras_esperadas: string; destino_esperado: string; notificar_esperado: string;
+  /** Desvios que só alertam (não retiram) e quem é avisado por eles. */
+  alertas_esperados: string; avisar_esperado: string;
+  /** Contrato e competência (cenários de contrato; sem título = verificação na competência). */
+  contrato_id: string; competencia: string;
+  /** "conforme_contrato" quando o título deve sair com o selo; aprovador exigido (ex.: diretoria). */
+  selo: string; aprovador_esperado: string;
 }
+const ESPERADO_VAZIO = { alertas_esperados: '', avisar_esperado: '', contrato_id: '', competencia: '', selo: '', aprovador_esperado: '' };
 const cenarios: { id: string; linhas: Linhas; esperados: Esperado[] }[] = [];
 
-function cenario(id: string, descricao: string, montar: (add: (arquivo: string, ...l: Record<string, string>[]) => void, esp: (e: Omit<Esperado, 'cenario_id' | 'descricao' | 'hora_avaliacao'>) => void) => void) {
+type EsperadoParcial = Omit<Esperado, 'cenario_id' | 'descricao' | 'hora_avaliacao' | keyof typeof ESPERADO_VAZIO> & Partial<typeof ESPERADO_VAZIO>;
+
+function cenario(id: string, descricao: string, montar: (add: (arquivo: string, ...l: Record<string, string>[]) => void, esp: (e: EsperadoParcial) => void) => void) {
   const linhas: Linhas = {};
   const esperados: Esperado[] = [];
   montar(
     (arquivo, ...l) => (linhas[arquivo] = [...(linhas[arquivo] ?? []), ...l]),
-    (e) => esperados.push({ cenario_id: id, descricao, hora_avaliacao: INICIO, ...e }),
+    (e) => esperados.push({ cenario_id: id, descricao, hora_avaliacao: INICIO, ...ESPERADO_VAZIO, ...e }),
   );
   cenarios.push({ id, linhas, esperados });
 }
@@ -435,7 +448,8 @@ cenario('C12', 'Aluguel sem NF, igual ao contrato', (add, esp) => {
   });
   add('contas_a_pagar.csv', t.titulo);
   add('agenda_remessa.csv', t.agenda);
-  esp({ titulo_id: t.id, regras_esperadas: '', destino_esperado: valor > pol.alcadas.analistaLiberarAte ? 'CONFERIDO_AGUARDANDO_APROVADOR' : 'LIBERADO_AUTOMATICO', notificar_esperado: '' });
+  esp({ titulo_id: t.id, regras_esperadas: '', destino_esperado: valor > pol.alcadas.analistaLiberarAte ? 'CONFERIDO_AGUARDANDO_APROVADOR' : 'LIBERADO_AUTOMATICO', notificar_esperado: '',
+    contrato_id: contrato.contrato_id, competencia: mesDe(VENC), selo: 'conforme_contrato' });
 });
 
 // C15 · Lançado por usuário desligado
@@ -452,6 +466,290 @@ cenario('C16', 'Filial com outra razão social na NF, mesma raiz de CNPJ', (add,
   const valor = valorUnico(f, 4200);
   const { t } = pacoteTed(add, f, valor, { cnpjNf: cnpjFilial(f.cnpj, 7), razaoNf: `${nomeComparavel(f.razao_social)} FILIAL SUL` });
   esp({ titulo_id: t.id, regras_esperadas: '', destino_esperado: 'LIBERADO_AUTOMATICO', notificar_esperado: '' });
+});
+
+// ---------------------------------------------------------------------------
+// Contratos (C18–C29): vínculo título × contrato e desvios D01–D10
+// ---------------------------------------------------------------------------
+const config = carregarConfig(path.join(RAIZ, 'config', 'goaudit.config.json'));
+const analise = analisarContratos({ idx, cal, config, agora: INICIO, titulosAvaliados: new Set() });
+const COMP = mesDe(VENC); // competência dos títulos criados (vencimento = dia do lote)
+const classe = (c: Contrato) => analise.classes.get(c.contrato_id)!;
+const temTituloNa = (c: Contrato, comp: string) =>
+  analise.competencias.some((x) => x.contratoId === c.contrato_id && x.competencia === comp && x.qtdTitulos > 0);
+const competenciaDe = (c: Contrato, venc: string) => competenciaDoVencimento(cal, Number(c.dia_vencimento), venc);
+
+const semTrocaBancariaRecente = (f: Fornecedor) =>
+  !(idx.alteracoesPorFornecedor.get(f.fornecedor_id) ?? []).some((a) => ['banco', 'agencia', 'conta', 'chave_pix'].includes(a.campo) && diasEntre(a.data_hora, INICIO) < 90);
+
+/** Contrato real da base que atende ao critério, ainda sem título na competência do cenário. */
+function escolherContrato(filtro: (c: Contrato, f: Fornecedor) => boolean, rotulo: string): { c: Contrato; f: Fornecedor } {
+  const achado = base.contratos
+    .map((c) => ({ c, f: idx.fornecedorPorId.get(c.fornecedor_id)! }))
+    .filter(({ c, f }) => f && !usados.has(f.fornecedor_id) && semTrocaBancariaRecente(f) && /vigente/i.test(c.status))
+    .filter(({ c }) => !temTituloNa(c, COMP) && (classe(c) === 'frete' || competenciaDe(c, VENC) === COMP))
+    .filter(({ c, f }) => filtro(c, f))
+    .sort((a, b) => a.c.contrato_id.localeCompare(b.c.contrato_id))[0];
+  if (!achado) throw new Error(`${rotulo}: nenhum contrato atende ao critério`);
+  usados.add(achado.f.fornecedor_id);
+  return achado;
+}
+
+/** Id novo que não existe na base. */
+function idLivre(prefixo: string, existe: (id: string) => boolean): string {
+  for (let n = 1; ; n++) {
+    const id = `${prefixo}${pad(n, 2)}`;
+    if (!existe(id) && !usados.has(id)) {
+      usados.add(id);
+      return id;
+    }
+  }
+}
+
+interface OpContrato {
+  categoria: string;
+  tipo: string;
+  nome: string;
+  fantasia: string;
+  valorMensal: number;
+  dia: number;
+  mesReajuste: string;
+  ultimoReajuste: string;
+  indice?: string;
+  inicio?: string;
+  fim?: string;
+  prazo?: string;
+  status?: string;
+}
+
+/**
+ * Fornecedor + contrato + OC do contrato, inventados para o cenário (quando a base não tem
+ * um contrato na situação pedida, ex.: reajuste em novembro). Copiam a estrutura de um
+ * contrato real do mesmo tipo, inclusive o gestor.
+ */
+function novoContratado(add: (a: string, ...l: Record<string, string>[]) => void, o: OpContrato) {
+  const modeloC = base.contratos.find((c) => c.tipo === o.tipo);
+  const modeloF = base.fornecedores.find((f) => f.categoria === o.categoria && f.contrato_id);
+  const modeloOc = base.pedidos.find((p) => p.tipo === 'contrato');
+  if (!modeloC || !modeloF || !modeloOc) throw new Error(`Sem modelo de contrato ${o.tipo}/${o.categoria}`);
+  const fid = idLivre('FP99', (id) => idx.fornecedorPorId.has(id));
+  const cid = idLivre('CT-99', (id) => idx.contratoPorId.has(id));
+  const cnpj = cnpjFilial(`99${pad(fid.slice(-2), 6)}000100`, 1);
+  const slug = nomeComparavel(o.fantasia).toLowerCase().replace(/ /g, '');
+  const f = {
+    ...modeloF, fornecedor_id: fid, razao_social: o.nome, nome_fantasia: o.fantasia, cnpj, categoria: o.categoria,
+    forma_pagamento_padrao: 'ted', email_cadastrado: `financeiro@${slug}.com.br`, telefone_cadastrado: `(85) 3999-00${fid.slice(-2)}`,
+    chave_pix: `financeiro@${slug}.com.br`, contrato_id: cid, data_cadastro: '2024-01-15', status_cadastro: 'ativo',
+    data_ultima_alteracao: '2024-01-15 10:00:00', responsavel_interno: modeloC.gestor_contrato,
+  } as Fornecedor;
+  const oc = {
+    ...modeloOc, oc_id: `OC-9${pad(novoNum(), 4)}`, cod_fornecedor_compras: `FC99${fid.slice(-2)}`, cnpj_fornecedor: cnpjDigitos(cnpj),
+    nome_fornecedor: nomeComparavel(o.nome), data_emissao: '2025-10-20', descricao: `Contrato ${o.fantasia}`, tipo: 'contrato',
+    valor_total: fmt(o.valorMensal * 12), valor_mensal: fmt(o.valorMensal), condicao_pagamento: `mensal dia ${o.dia}`,
+    data_aprovacao: '2025-10-21', status: 'aprovada', quantidade: '12', unidade: 'mês', valor_unitario: o.valorMensal.toFixed(4),
+  } as Record<string, string>;
+  const c = {
+    ...modeloC, contrato_id: cid, fornecedor_id: fid, oc_id: oc.oc_id!, objeto: `${o.tipo} ${o.fantasia}`, valor_mensal: fmt(o.valorMensal),
+    valor_variavel: 'não', condicao_pagamento: `mensal dia ${o.dia}`, dia_vencimento: String(o.dia), forma_pagamento: 'ted',
+    inicio_vigencia: o.inicio ?? '2024-11-01', prazo: o.prazo ?? modeloC.prazo, fim_vigencia_atual: o.fim ?? '2027-10-31',
+    indice_reajuste: o.indice ?? 'IPCA', mes_reajuste: o.mesReajuste, data_ultimo_reajuste: o.ultimoReajuste, status: o.status ?? 'vigente',
+  } as Contrato;
+  add('fornecedores.csv', f);
+  add('pedidos_compra.csv', oc);
+  add('contratos_fornecedores.csv', c);
+  return { f, c, oc };
+}
+
+/** Título de contrato com NF (OC do contrato). `valorNf` ≠ `valor` quando há multa e juros. */
+function tituloDeContrato(
+  add: (a: string, ...l: Record<string, string>[]) => void, f: Fornecedor, ocId: string, valor: number,
+  o: { valorNf?: number; vencimento?: string; lancamento?: string } = {},
+) {
+  const venc = o.vencimento ?? VENC;
+  const valorNf = o.valorNf ?? valor;
+  const nf = novaNf(f.cnpj, nomeComparavel(f.razao_social), valorNf, ocId, [{ venc, valor: valorNf }]);
+  add('notas_fiscais.csv', nf.nf);
+  add('nf_duplicatas.csv', ...nf.duplicatas);
+  const t = novoTitulo({
+    f, nfDigitado: String(nf.num), oc: ocId, parcela: '1/1', valor, vencimento: venc, forma: 'ted', lancamento: o.lancamento ?? LANC,
+    banco: MER, dia: dia2, historico: `NF ${nf.num} parc 1/1 - ${f.nome_fantasia} - mensalidade`,
+  });
+  add('contas_a_pagar.csv', t.titulo);
+  add('agenda_remessa.csv', t.agenda);
+  return t;
+}
+
+/** Conta de consumo (sem OC) por boleto com NF, como as da base. */
+function contaDeConsumo(add: (a: string, ...l: Record<string, string>[]) => void, f: Fornecedor, valor: number) {
+  const nf = novaNf(f.cnpj, nomeComparavel(f.razao_social), valor, '', [{ venc: VENC, valor }]);
+  nf.nf.informacoes_complementares = `Conta de consumo ${COMP}`;
+  const banco = [...idx.bancosDeCobrancaHistoricos(raizCnpj(f.cnpj))][0] ?? f.banco;
+  const bol = novoBoletoDda(f, banco, valor, VENC, `${nf.num}/1`);
+  add('notas_fiscais.csv', nf.nf);
+  add('nf_duplicatas.csv', ...nf.duplicatas);
+  add('dda_boletos.csv', bol.dda);
+  const t = novoTitulo({
+    f, nfDigitado: String(nf.num), oc: '', parcela: '1/1', valor, vencimento: VENC, forma: 'boleto', linha: bol.linha, cnpjBenef: f.cnpj,
+    origem: 'boleto_email', lancamento: LANC, banco: MER, dia: dia2, historico: `Conta de consumo ${COMP} - ${f.nome_fantasia}`,
+  });
+  add('contas_a_pagar.csv', t.titulo);
+  add('agenda_remessa.csv', t.agenda);
+  return t;
+}
+
+/** Média das últimas competências pagas da conta de consumo, sem desvio no histórico. */
+function utilidadeEstavel(c: Contrato): number | null {
+  const hist = analise.competencias.filter((x) => x.contratoId === c.contrato_id && x.competencia < COMP && x.qtdTitulos > 0);
+  if (hist.length < config.contratos.utilidade.competencias_media || hist.some((x) => x.situacao !== 'conforme')) return null;
+  const ult = hist.slice(-config.contratos.utilidade.competencias_media);
+  return ult.reduce((s, x) => s + x.valorCobrado, 0) / ult.length;
+}
+
+const indiceIpca = (comp: string) =>
+  indiceParaCompetencia(base.indicesReajuste, 'IPCA', comp, config.contratos.reajuste.defasagem_indice_meses) ?? 0;
+const mesNum = COMP.slice(5, 7);
+
+// C18 · Fee de agência cobrado duas vezes na mesma competência
+cenario('C18', 'Fee de agência cobrado duas vezes na mesma competência', (add, esp) => {
+  const { c, f } = escolherContrato((c, f) => f.categoria === 'marketing_agencia' && classe(c) === 'fixo' && !!c.oc_id && c.forma_pagamento === 'ted', 'C18');
+  const m = numero(c.valor_mensal)!;
+  const t1 = tituloDeContrato(add, f, c.oc_id, m);
+  const t2 = tituloDeContrato(add, f, c.oc_id, m, { lancamento: '2026-10-30 15:20:00' });
+  const destino = m > pol.alcadas.analistaLiberarAte ? 'CONFERIDO_AGUARDANDO_APROVADOR' : 'LIBERADO_AUTOMATICO';
+  esp({ titulo_id: t1.id, regras_esperadas: '', destino_esperado: destino, notificar_esperado: '', contrato_id: c.contrato_id, competencia: COMP, selo: 'conforme_contrato' });
+  esp({ titulo_id: t2.id, regras_esperadas: 'D03', destino_esperado: 'RETIRADO', notificar_esperado: 'PS01', contrato_id: c.contrato_id, competencia: COMP });
+});
+
+// C19 · Aluguel 18% acima, fora do mês de reajuste
+cenario('C19', 'Aluguel 18% acima do contrato fora do mês de reajuste', (add, esp) => {
+  const { c, f } = escolherContrato(
+    (c, f) => pol.tresVias.dispensaNf.includes(f.categoria) && !!c.oc_id && c.forma_pagamento === 'boleto' && c.mes_reajuste !== mesNum,
+    'C19',
+  );
+  const valor = centavos(numero(c.valor_mensal)! * 1.18);
+  const banco = [...idx.bancosDeCobrancaHistoricos(raizCnpj(f.cnpj))][0] ?? f.banco;
+  const bol = novoBoletoDda(f, banco, valor, VENC, `ALUGUEL-${COMP}`);
+  add('dda_boletos.csv', bol.dda);
+  const t = novoTitulo({
+    f, nfDigitado: '', oc: c.oc_id, parcela: '1/1', valor, vencimento: VENC, forma: 'boleto', linha: bol.linha, cnpjBenef: f.cnpj,
+    origem: 'manual', lancamento: LANC, banco: MER, dia: dia2, historico: `Aluguel - competência ${COMP} - ${f.nome_fantasia}`,
+  });
+  add('contas_a_pagar.csv', t.titulo);
+  add('agenda_remessa.csv', t.agenda);
+  esp({ titulo_id: t.id, regras_esperadas: 'D01', destino_esperado: 'RETIRADO', notificar_esperado: `${c.gestor_pessoa_id} PS01`, contrato_id: c.contrato_id, competencia: COMP });
+});
+
+// C20 · Assinatura reajustada no mês certo, dentro do IPCA
+cenario('C20', 'Assinatura reajustada no mês certo, dentro do IPCA', (add, esp) => {
+  const m = 2400;
+  const { f, c, oc } = novoContratado(add, {
+    categoria: 'ti_saas', tipo: 'assinatura de software', nome: 'Nuvem Serena Software Ltda', fantasia: 'Nuvem Serena', valorMensal: m,
+    dia: Number(VENC.slice(8, 10)), mesReajuste: mesNum, ultimoReajuste: `${Number(COMP.slice(0, 4)) - 1}-${mesNum}-01`,
+  });
+  const valor = centavos(m * (1 + indiceIpca(COMP)));
+  const t = tituloDeContrato(add, f, oc.oc_id!, valor);
+  esp({ titulo_id: t.id, regras_esperadas: '', destino_esperado: valor > pol.alcadas.analistaLiberarAte ? 'CONFERIDO_AGUARDANDO_APROVADOR' : 'LIBERADO_AUTOMATICO', notificar_esperado: '', contrato_id: c.contrato_id, competencia: COMP, selo: 'conforme_contrato' });
+});
+
+// C21 · Serviço reajustado no mês certo, 12 pontos acima do índice
+cenario('C21', 'Serviço reajustado no mês certo, 12% acima do índice', (add, esp) => {
+  const m = 3200;
+  const { f, c, oc } = novoContratado(add, {
+    categoria: 'servicos', tipo: 'prestação de serviço contínuo', nome: 'Zeladoria Horizonte Serviços Ltda', fantasia: 'Zeladoria Horizonte',
+    valorMensal: m, dia: Number(VENC.slice(8, 10)), mesReajuste: mesNum, ultimoReajuste: `${Number(COMP.slice(0, 4)) - 1}-${mesNum}-01`,
+  });
+  const valor = centavos(m * (1 + indiceIpca(COMP) + 0.12));
+  const t = tituloDeContrato(add, f, oc.oc_id!, valor);
+  esp({ titulo_id: t.id, regras_esperadas: 'D05', destino_esperado: 'RETIRADO', notificar_esperado: c.gestor_pessoa_id, contrato_id: c.contrato_id, competencia: COMP });
+});
+
+// C22 · Conta de consumo 10 vezes menor que a média (erro de digitação)
+cenario('C22', 'Conta de consumo 10 vezes menor que a média', (add, esp) => {
+  const { c, f } = escolherContrato((c) => classe(c) === 'utilidade' && c.forma_pagamento === 'boleto' && utilidadeEstavel(c) != null, 'C22');
+  const t = contaDeConsumo(add, f, centavos(utilidadeEstavel(c)! / 10));
+  esp({ titulo_id: t.id, regras_esperadas: '', destino_esperado: 'LIBERADO_AUTOMATICO', notificar_esperado: '', alertas_esperados: 'D02', avisar_esperado: 'PS01', contrato_id: c.contrato_id, competencia: COMP });
+});
+
+// C23 · Conta de consumo 60% acima da média
+cenario('C23', 'Conta de consumo 60% acima da média', (add, esp) => {
+  const { c, f } = escolherContrato((c) => classe(c) === 'utilidade' && c.forma_pagamento === 'boleto' && utilidadeEstavel(c) != null, 'C23');
+  const valor = centavos(utilidadeEstavel(c)! * 1.6);
+  const t = contaDeConsumo(add, f, valor);
+  esp({
+    titulo_id: t.id, regras_esperadas: '', destino_esperado: valor > pol.alcadas.analistaLiberarAte ? 'CONFERIDO_AGUARDANDO_APROVADOR' : 'LIBERADO_AUTOMATICO',
+    notificar_esperado: '', alertas_esperados: 'D09', avisar_esperado: c.gestor_pessoa_id, contrato_id: c.contrato_id, competencia: COMP,
+  });
+});
+
+// C24 · Assinatura sem título a 5 dias úteis do vencimento
+cenario('C24', 'Assinatura sem título a 5 dias úteis do vencimento', (add, esp) => {
+  // Primeiro dia de vencimento depois do lote cujo gatilho (5 dias úteis antes) já passou no início da simulação.
+  const hoje = INICIO.slice(0, 10);
+  let dia = Number(VENC.slice(8, 10)) + 1;
+  while (diasUteisAntes(cal, vencimentoNominal(cal, dia, COMP), config.contratos.alerta_sem_titulo_dias_uteis) > hoje) dia--;
+  const { c } = novoContratado(add, {
+    categoria: 'ti_saas', tipo: 'assinatura de software', nome: 'Painel Vivo Tecnologia Ltda', fantasia: 'Painel Vivo', valorMensal: 1890,
+    dia, mesReajuste: '03', ultimoReajuste: `${COMP.slice(0, 4)}-03-01`,
+  });
+  esp({ titulo_id: '', regras_esperadas: '', destino_esperado: '', notificar_esperado: '', alertas_esperados: 'D04', avisar_esperado: c.gestor_pessoa_id, contrato_id: c.contrato_id, competencia: COMP });
+});
+
+// C25 · Cobrança de contrato com vigência encerrada
+cenario('C25', 'Cobrança de contrato com vigência encerrada', (add, esp) => {
+  const { f, c, oc } = novoContratado(add, {
+    categoria: 'servicos', tipo: 'prestação de serviço contínuo', nome: 'Jardim Pleno Paisagismo Ltda', fantasia: 'Jardim Pleno',
+    valorMensal: 2750, dia: Number(VENC.slice(8, 10)), mesReajuste: '03', ultimoReajuste: '2025-03-01',
+    inicio: '2024-10-01', fim: '2026-09-30', prazo: '24 meses', status: 'encerrado',
+  });
+  const t = tituloDeContrato(add, f, oc.oc_id!, 2750);
+  esp({ titulo_id: t.id, regras_esperadas: 'D06', destino_esperado: 'RETIRADO', notificar_esperado: `${c.gestor_pessoa_id} PS01`, contrato_id: c.contrato_id, competencia: COMP });
+});
+
+// C26 · Campanha de agência em OC pontual aprovada (não é do fee)
+cenario('C26', 'Campanha de agência em OC pontual aprovada', (add, esp) => {
+  const f = escolherFornecedor({ categorias: ['marketing_agencia'], forma: 'ted', valorMax: 3900, comContrato: true });
+  const valor = valorUnico(f, 3700);
+  const { t } = pacoteTed(add, f, valor);
+  esp({ titulo_id: t.id, regras_esperadas: '', destino_esperado: 'LIBERADO_AUTOMATICO', notificar_esperado: '' });
+});
+
+// C27 · Frete de outubro ~55% acima da estimativa: dentro da faixa sazonal (dado real da base)
+cenario('C27', 'Frete de outubro cerca de 55% acima da estimativa', (_add, esp) => {
+  const outubro = analise.competencias
+    .filter((x) => x.classe === 'frete' && x.competencia.endsWith('-10') && x.valorEsperado)
+    .sort((a, b) => Math.abs(a.valorCobrado / a.valorEsperado! - 1.55) - Math.abs(b.valorCobrado / b.valorEsperado! - 1.55))[0];
+  if (!outubro) throw new Error('C27: nenhum frete com competência de outubro');
+  esp({ titulo_id: '', regras_esperadas: '', destino_esperado: '', notificar_esperado: '', contrato_id: outubro.contratoId, competencia: outubro.competencia });
+});
+
+// C28 · Mensalidade paga 9 dias atrasada com 2,3% a mais (multa 2% + juros 1% a.m. pro rata)
+cenario('C28', 'Mensalidade paga 9 dias atrasada com 2,3% a mais', (add, esp) => {
+  const vencAtrasado = somarDias(VENC, -9);
+  const m = 3100;
+  const { f, c, oc } = novoContratado(add, {
+    categoria: 'ti_saas', tipo: 'assinatura de software', nome: 'Rota Clara Sistemas Ltda', fantasia: 'Rota Clara', valorMensal: m,
+    dia: Number(vencAtrasado.slice(8, 10)), mesReajuste: '03', ultimoReajuste: `${COMP.slice(0, 4)}-03-01`,
+  });
+  const valor = centavos(m * (1 + pol.atraso.multa + pol.atraso.jurosMes * (9 / 30)));
+  const t = tituloDeContrato(add, f, oc.oc_id!, valor, { valorNf: m, vencimento: vencAtrasado });
+  esp({ titulo_id: t.id, regras_esperadas: '', destino_esperado: 'LIBERADO_AUTOMATICO', notificar_esperado: '', contrato_id: c.contrato_id, competencia: mesDe(vencAtrasado), selo: 'conforme_contrato' });
+});
+
+// C29 · Aluguel acima de R$ 50 mil no valor exato: conforme contrato, aguarda a diretoria (dado real da base)
+cenario('C29', 'Aluguel acima de R$ 50 mil no valor exato do contrato', (_add, esp) => {
+  const alvo = base.agenda
+    .map((a) => ({ a, v: analise.vinculos.get(a.titulo_id) }))
+    .filter(({ a, v }) => v?.contratoId && v.confianca === 'alta' && pol.tresVias.dispensaNf.includes(idx.fornecedorPorId.get(a.fornecedor_id)?.categoria ?? ''))
+    .filter(({ a, v }) => {
+      const c = idx.contratoPorId.get(v!.contratoId!)!;
+      return numero(a.valor)! > pol.alcadas.aprovadorAte && centavos(numero(a.valor)!) === centavos(numero(c.valor_mensal)!) && a.data_prevista >= dia1;
+    })
+    .sort((x, y) => x.a.titulo_id.localeCompare(y.a.titulo_id))[0];
+  if (!alvo) throw new Error('C29: nenhum aluguel acima da alçada do aprovador na agenda');
+  esp({
+    titulo_id: alvo.a.titulo_id, regras_esperadas: '', destino_esperado: 'CONFERIDO_AGUARDANDO_APROVADOR', notificar_esperado: '',
+    contrato_id: alvo.v!.contratoId!, competencia: alvo.v!.competencia!, selo: 'conforme_contrato', aprovador_esperado: pol.alcadas.diretoriaPessoaId,
+  });
 });
 
 // ---------------------------------------------------------------------------

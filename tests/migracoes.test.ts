@@ -216,3 +216,43 @@ describe('notificações e alertas', () => {
     expect((await como('livia', `update public.alertas set situacao = 'encerrado' where chave = 'a2' returning id`)).rows).toHaveLength(0);
   });
 });
+
+describe('contratos (RLS por gestor do contrato)', () => {
+  const comp = (contrato: string, gestor: string) =>
+    como('op', `insert into public.competencias_contrato (simulacao_id, contrato_id, competencia, classe, gestor_pessoa_id, valor_cobrado, situacao, hora_simulada)
+      values ($1, $2, '2026-11', 'fixo', $3, 100, 'conforme', $4)`, [sim, contrato, gestor, H]);
+  it('agentes de operação gravam vínculo e competência; consulta e leitor não', async () => {
+    expect((await comp('CT-A', 'PS02')).erro).toBeNull();
+    expect((await comp('CT-B', 'PS08')).erro).toBeNull();
+    expect((await como('op', `insert into public.vinculos_contrato (simulacao_id, titulo_id, contrato_id, competencia, metodo, confianca, gestor_pessoa_id, hora_simulada)
+      values ($1, 'T-ct', 'CT-A', '2026-11', 'oc_contrato', 'alta', 'PS02', $2)`, [sim, H])).erro).toBeNull();
+    expect((await como('marcos', `insert into public.competencias_contrato (simulacao_id, contrato_id, competencia, classe, gestor_pessoa_id, situacao, hora_simulada)
+      values ($1, 'CT-X', '2026-11', 'fixo', 'PS02', 'conforme', $2)`, [sim, H])).erro).toMatch(/row-level security|permission denied/);
+    expect((await como('leitor', `insert into public.vinculos_contrato (simulacao_id, titulo_id, contrato_id, metodo, confianca, hora_simulada)
+      values ($1, 'T-x', 'CT-A', 'oc_contrato', 'alta', $2)`, [sim, H])).erro).toMatch(/row-level security|permission denied/);
+  });
+  it('gestor de área vê só os próprios contratos; aprovador vê todos; leitor nada', async () => {
+    const ver = (q: Quem) => como<{ contrato_id: string }>(q, `select contrato_id from public.competencias_contrato order by contrato_id`);
+    expect((await ver('marcos')).rows).toEqual([{ contrato_id: 'CT-A' }]);
+    expect((await ver('livia')).rows).toEqual([{ contrato_id: 'CT-B' }]);
+    expect((await ver('renata')).rows.map((r) => r.contrato_id)).toEqual(['CT-A', 'CT-B']);
+    expect((await ver('leitor')).rows).toEqual([]);
+    expect((await como('livia', `select titulo_id from public.vinculos_contrato`)).rows).toEqual([]);
+    expect((await como('marcos', `select titulo_id from public.vinculos_contrato`)).rows).toHaveLength(1);
+  });
+  it('consulta não altera competência, nem a própria', async () => {
+    expect((await como('marcos', `update public.competencias_contrato set situacao = 'desvio' where contrato_id = 'CT-A' returning contrato_id`)).rows).toHaveLength(0);
+  });
+  it('alerta de contrato: só o gestor, quem foi avisado e quem vê tudo', async () => {
+    await como('op', `insert into public.alertas (simulacao_id, tipo, contrato_id, gestor_pessoa_id, dono_pessoa_id, regras, mensagem, chave, hora_simulada)
+      values ($1, 'contrato', 'CT-A', 'PS02', 'PS02', '{D01}', 'm', 'c1', $2), ($1, 'contrato', 'CT-B', 'PS08', 'PS01', '{D02}', 'm', 'c2', $2)`, [sim, H]);
+    const chaves = async (q: Quem) => (await como<{ chave: string }>(q, `select chave from public.alertas where tipo = 'contrato' order by chave`)).rows.map((r) => r.chave);
+    expect(await chaves('marcos')).toEqual(['c1']);
+    expect(await chaves('livia')).toEqual(['c2']);
+    expect(await chaves('renata')).toEqual(['c1', 'c2']);
+    expect(await chaves('leitor')).toEqual([]);
+  });
+  it('ninguém apaga vínculo ou competência', async () => {
+    expect((await como('op', `delete from public.competencias_contrato where contrato_id = 'CT-A'`)).erro).toMatch(/permission denied/);
+  });
+});

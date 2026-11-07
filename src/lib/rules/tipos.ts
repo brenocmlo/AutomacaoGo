@@ -3,10 +3,13 @@ import type { Politicas } from '@/lib/config/politicas';
 import type { CalendarioBancario, HoraSimulada } from '@/lib/clock/relogio';
 import type { DossieTitulo, Indices } from '@/lib/data/indices';
 import type { AgendaItem } from '@/lib/data/tipos';
+import type { CodigoDesvio } from '@/lib/contratos/tipos';
 
 export type CodigoRegra =
   | 'R01' | 'R02' | 'R03' | 'R04' | 'R05' | 'R06' | 'R07'
-  | 'R08' | 'R09' | 'R10' | 'R11' | 'R12' | 'R13' | 'R14';
+  | 'R08' | 'R09' | 'R10' | 'R11' | 'R13' | 'R14'
+  // Desvios contratuais (substituem a antiga R12): ver src/lib/contratos
+  | CodigoDesvio;
 
 /**
  * critica     → retira do lote e notifica na hora
@@ -29,6 +32,8 @@ export interface ResultadoRegra {
   aprovacao?: 'simples' | 'dupla' | 'alcada_superior';
   /** Valor considerado (ex.: soma do fracionamento). */
   valorConsiderado?: number;
+  /** Quem avisar, quando a própria regra sabe (desvios contratuais usam o gestor do contrato). */
+  acionar?: string[];
 }
 
 /** Aprovação humana já dada (do ERP ou do GoAudit), usada por R08/R09. */

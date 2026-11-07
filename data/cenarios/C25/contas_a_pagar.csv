@@ -1,0 +1,2 @@
+titulo_id,fornecedor_id,numero_nf_digitado,oc_id,parcela,valor,vencimento,forma_pagamento,linha_digitavel,cnpj_beneficiario_boleto,origem_lancamento,lancado_por,data_lancamento,status,data_pagamento,banco_pagador,lote_remessa,historico,nivel_aprovacao
+TP900073,FP9904,900072,OC-90071,1/1,2750.00,2026-11-04,ted,,,xml_portal,usuario_03,2026-10-29 10:00:00,agendado,,Banco Meridiano,RM20261104-MER,NF 900072 parc 1/1 - Jardim Pleno - mensalidade,analista

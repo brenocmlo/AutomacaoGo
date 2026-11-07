@@ -2,6 +2,7 @@ import { minutosEntre, type HoraSimulada } from '@/lib/clock/relogio';
 import type { ConfigGoAudit } from '@/lib/config/config';
 import type { Politicas } from '@/lib/config/politicas';
 import type { DossieTitulo } from '@/lib/data/indices';
+import { resolverAcionamento } from './acionamento';
 import { nivelPorValor } from './auxiliares';
 import type { ResultadoRegra, Severidade } from './tipos';
 
@@ -23,15 +24,13 @@ export interface DecisaoDestino {
 
 const PESO: Record<Severidade, number> = { critica: 100, conferencia: 60, aprovacao: 40, alerta: 20 };
 
-function resolverPessoas(codigos: string[], d: DossieTitulo, config: ConfigGoAudit): string[] {
+function resolverPessoas(falhas: ResultadoRegra[], d: DossieTitulo, config: ConfigGoAudit): string[] {
   const dono = d.contrato?.gestor_pessoa_id || config.acionamento.dono_por_categoria[d.fornecedor?.categoria ?? ''] || null;
   const out = new Set<string>();
-  for (const c of codigos) {
-    for (const p of config.acionamento.por_regra[c] ?? []) {
-      if (p === '@dono') {
-        if (dono) out.add(dono);
-      } else out.add(p);
-    }
+  for (const f of falhas) {
+    // A regra que sabe quem avisar (desvios contratuais: gestor do contrato) manda; as demais seguem a configuração.
+    if (f.acionar) f.acionar.forEach((p) => out.add(p));
+    else resolverAcionamento([f.codigo], { gestor: dono, dono, responsavel: dono }, config).forEach((p) => out.add(p));
   }
   return [...out];
 }
@@ -48,7 +47,10 @@ export function decidirDestino(
   pol: Politicas,
   config: ConfigGoAudit,
   alcadaAgente = pol.alcadas.analistaLiberarAte,
+  /** Contrato quando o título é rotina contratual (selo "conforme contrato"). */
+  rotina: { contratoId: string; competencia: string | null } | null = null,
 ): DecisaoDestino {
+  const selo = rotina ? ` Conforme contrato ${rotina.contratoId}${rotina.competencia ? ` (competência ${rotina.competencia})` : ''}.` : '';
   const falhas = resultados.filter((r) => !r.passou);
   const de = (s: Severidade) => falhas.filter((f) => f.severidade === s);
   const risco = falhas.length ? Math.max(...falhas.map((f) => PESO[f.severidade])) + Math.min(falhas.length - 1, 5) * 2 : 0;
@@ -62,7 +64,7 @@ export function decidirDestino(
         ...base,
         destino: 'RETIRADO',
         motivo: fs.map((f) => `${f.codigo}: ${f.motivo}`).join(' '),
-        notificar: resolverPessoas(fs.map((f) => f.codigo), d, config),
+        notificar: resolverPessoas(fs, d, config),
         aprovacao: null,
       };
     }
@@ -78,7 +80,7 @@ export function decidirDestino(
       : [nivel === 'diretoria' ? pol.alcadas.diretoriaPessoaId : 'aprovador'];
     const margem = config.aprovacao.margem_antes_fechamento_min;
     const motivo = aprov.map((f) => `${f.codigo}: ${f.motivo}`).join(' ');
-    const notificar = resolverPessoas(aprov.map((f) => f.codigo), d, config);
+    const notificar = resolverPessoas(aprov, d, config);
     const tipo = dupla ? 'dupla' : aprov.some((f) => f.aprovacao === 'alcada_superior') ? 'alcada_superior' : 'simples';
     if (fechamento && minutosEntre(agora, fechamento) <= margem) {
       return {
@@ -97,11 +99,11 @@ export function decidirDestino(
     return {
       ...base,
       destino: 'CONFERIDO_AGUARDANDO_APROVADOR',
-      motivo: `Passou em todas as checagens; valor acima da alçada do agente. Dossiê pronto para aprovação (${nivel}).`,
+      motivo: `Passou em todas as checagens; valor acima da alçada do agente. Dossiê pronto para aprovação (${nivel}).${selo}`,
       notificar: [],
       aprovacao: { tipo: 'simples', valor: d.valor, nivel, aprovadores: [nivel === 'diretoria' ? pol.alcadas.diretoriaPessoaId : 'aprovador'] },
     };
   }
 
-  return { ...base, destino: 'LIBERADO_AUTOMATICO', motivo: 'Passou em todas as checagens, dentro da alçada do agente.', notificar: [], aprovacao: null };
+  return { ...base, destino: 'LIBERADO_AUTOMATICO', motivo: `Passou em todas as checagens, dentro da alçada do agente.${selo}`, notificar: [], aprovacao: null };
 }

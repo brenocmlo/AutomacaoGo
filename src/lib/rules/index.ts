@@ -10,10 +10,17 @@ import { r09AprovacaoDupla } from './r09-aprovacao-dupla';
 import { r10Recebimento } from './r10-recebimento';
 import { r11ValorAtipico } from './r11-valor-atipico';
 import { r13Lancador } from './r13-lancador';
+import type { CodigoDesvio } from '@/lib/contratos/tipos';
 import type { CodigoRegra, Regra } from './tipos';
 
-/** Regras implementadas. R12 (variação mensal) e R14 (mensagem) entram nas próximas etapas. */
-export const REGRAS: Record<Exclude<CodigoRegra, 'R12' | 'R14'>, Regra> = {
+/**
+ * Regras por título implementadas. R14 (mensagem) entra com o leitor. A antiga R12 (variação mensal)
+ * foi substituída pelos desvios contratuais D01–D10, calculados por competência em src/lib/contratos.
+ */
+export const REGRAS: Record<
+  Exclude<CodigoRegra, 'R14' | CodigoDesvio>,
+  Regra
+> = {
   R01: r01Duplicidade,
   R02: r02JaPago,
   R03: r03NfTitulo,

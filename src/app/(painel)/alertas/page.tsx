@@ -4,7 +4,8 @@ import { aprovarEmLote } from '@/app/acoes';
 import { alertasAbertos, caixaDeEntrada, painel, solicitacoesPendentes } from '@/lib/painel/dados';
 import { supabaseConfigurado } from '@/lib/supabase/config';
 
-export default async function Alertas() {
+export default async function Alertas({ searchParams }: PageProps<'/alertas'>) {
+  const soContrato = (await searchParams).so === 'contrato';
   if (!supabaseConfigurado()) {
     return <Card className="mx-auto max-w-lg p-6 text-sm text-muted">Alertas e caixa de entrada exigem o Supabase conectado.</Card>;
   }
@@ -17,8 +18,13 @@ export default async function Alertas() {
   ]);
   // Aprovação em lote: só os conferidos (passaram em tudo) que cabem na alçada de quem está logado.
   const alcada = p.usuario?.alcada ?? Infinity;
-  const emLote = pendentes.filter((s) => s.tipo === 'simples' && Number(s.valor) <= alcada);
-  const exigem = pendentes.filter((s) => !emLote.includes(s));
+  const cabem = pendentes.filter((s) => s.tipo === 'simples' && Number(s.valor) <= alcada);
+  const exigem = pendentes.filter((s) => !cabem.includes(s));
+  // Selo "conforme contrato": rotina contratual (vínculo alto, valor na faixa, único na competência, vigente).
+  const conformes = new Set(p.avaliacoes.filter((a) => a.conformeContrato).map((a) => a.tituloId));
+  const qtdConformes = cabem.filter((s) => conformes.has(s.titulo_id)).length;
+  const emLote = (soContrato ? cabem.filter((s) => conformes.has(s.titulo_id)) : cabem)
+    .sort((a, b) => Number(conformes.has(b.titulo_id)) - Number(conformes.has(a.titulo_id)));
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -30,6 +36,12 @@ export default async function Alertas() {
       {ehAprovador && (
         <Card>
           <CardTitulo extra={<Badge tom="info">{pendentes.length} pendentes</Badge>}>Aprovações</CardTitulo>
+          {cabem.length > 0 && (
+            <div className="flex items-center gap-3 border-b border-border px-4 py-2 text-xs">
+              <Link href="/alertas" className={soContrato ? 'text-muted hover:text-text' : 'font-medium text-accent'}>Todos os conferidos ({cabem.length})</Link>
+              <Link href="/alertas?so=contrato" className={soContrato ? 'font-medium text-accent' : 'text-muted hover:text-text'}>Só conforme contrato ({qtdConformes})</Link>
+            </div>
+          )}
           {emLote.length > 0 && (
             <form action={aprovarEmLote} className="border-b border-border p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
@@ -41,6 +53,7 @@ export default async function Alertas() {
                   <li key={s.id} className="flex items-center gap-3 px-3 py-1.5 text-xs">
                     <input type="checkbox" name="solicitacao" value={s.id} defaultChecked />
                     <Link href={`/auditoria?t=${s.titulo_id}`} className="font-mono hover:underline">{s.titulo_id}</Link>
+                    {conformes.has(s.titulo_id) && <Badge tom="ok">Conforme contrato</Badge>}
                     <span className="min-w-0 flex-1 truncate text-muted">{s.motivo}</span>
                     <span className="tabular">{brl(Number(s.valor))}</span>
                   </li>
@@ -92,7 +105,8 @@ export default async function Alertas() {
         <ul className="divide-y divide-border">
           {alertas.map((a) => (
             <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 text-sm">
-              <Badge tom="warn">{a.tipo.replace('_', ' ')}</Badge>
+              <Badge tom="warn">{a.tipo === 'contrato' ? `contrato · ${a.regras.join(', ')}` : a.tipo.replace('_', ' ')}</Badge>
+              {a.contrato_id && <Link href={`/contratos/${a.contrato_id}`} className="font-mono text-xs text-accent hover:underline">{a.contrato_id}{a.competencia ? ` · ${a.competencia}` : ''}</Link>}
               {a.titulo_id && <Link href={`/auditoria?t=${a.titulo_id}`} className="font-mono text-xs hover:underline">{a.titulo_id}</Link>}
               <span className="min-w-0 flex-1 text-xs text-muted">{a.mensagem}</span>
               {a.dono_pessoa_id && <span className="text-xs text-muted">dono {a.dono_pessoa_id}</span>}

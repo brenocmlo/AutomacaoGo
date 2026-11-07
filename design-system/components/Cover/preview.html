@@ -1,0 +1,54 @@
+<!-- @dsCard height=300 -->
+<style>
+  html, body { margin: 0; background: var(--bg); }
+  .cover { position: relative; width: 960px; height: 300px; overflow: hidden; background: var(--bg); }
+  .cover svg { position: absolute; inset: 0; }
+  .b-accent { fill: var(--brand-blue); }
+  .b-ink { fill: var(--brand-pink); }
+  .b-soft { fill: var(--accent-soft); }
+  .b-ok { fill: var(--brand-lime); }
+  .b-surface { fill: var(--surface); }
+  .s-ok { fill: var(--brand-blue); } .s-info { fill: var(--brand-amber); } .s-warn { fill: var(--brand-amber); } .s-danger { fill: var(--brand-lime); } .s-muted { fill: var(--brand-blue); }
+  .tile { rx: var(--radius-xl); }
+  .pill { rx: var(--radius-md); }
+  .name { position: absolute; left: 40px; bottom: 40px; max-width: 440px; }
+  .name h1 { margin: 0; font-family: var(--font-sans); font-weight: 600; font-size: 100px; line-height: .95; letter-spacing: -.025em; color: var(--text); }
+  .name p { margin: 16px 0 0; font-family: var(--font-sans); font-size: 14px; line-height: 20px; color: var(--muted); }
+</style>
+<div class="cover">
+  <!--
+    blocks: brand-blue 176x220 slab (the protagonist, radius-xl), brand-pink 284x108 band bleeding top-right, accent-soft 272x188 field bleeding bottom-right, brand-lime 80x88 tile; ground bg. Gogroup palette, color blocking per the brandbook.
+    arrangement: one tall slab with satellites, right of x=480; ink and soft blocks bleed off the top, right and bottom edges.
+    pattern: "dense, modular UI" + the product's own motif, the destination bar: six stacked 12px bars of pills in brand-blue, brand-amber and brand-lime (five colors in all with the tint) on surface tracks inside the accent-soft field.
+    scales: gaps space-4 (16px), row pitch space-6 (24px), pill height 12px with radius-md (6px = half), tiles radius-xl.
+  -->
+  <svg width="960" height="300" viewBox="0 0 960 300" aria-hidden="true">
+    <rect class="b-accent tile" x="496" y="-12" width="176" height="220"/>
+    <rect class="b-ok tile" x="496" y="224" width="80" height="88"/>
+    <rect class="b-ink tile" x="688" y="-12" width="284" height="108"/>
+    <rect class="b-soft tile" x="688" y="112" width="284" height="200"/>
+    <g>
+      <rect class="b-surface pill" x="712" y="136" width="224" height="12"/>
+      <rect class="s-ok pill" x="712" y="136" width="132" height="12"/><rect class="s-info pill" x="848" y="136" width="36" height="12"/><rect class="s-warn pill" x="888" y="136" width="48" height="12"/>
+
+      <rect class="b-surface pill" x="712" y="160" width="224" height="12"/>
+      <rect class="s-ok pill" x="712" y="160" width="96" height="12"/><rect class="s-warn pill" x="812" y="160" width="72" height="12"/><rect class="s-danger pill" x="888" y="160" width="28" height="12"/>
+
+      <rect class="b-surface pill" x="712" y="184" width="224" height="12"/>
+      <rect class="s-ok pill" x="712" y="184" width="168" height="12"/><rect class="s-muted pill" x="884" y="184" width="24" height="12"/>
+
+      <rect class="b-surface pill" x="712" y="208" width="224" height="12"/>
+      <rect class="s-info pill" x="712" y="208" width="60" height="12"/><rect class="s-ok pill" x="776" y="208" width="100" height="12"/><rect class="s-danger pill" x="880" y="208" width="56" height="12"/>
+
+      <rect class="b-surface pill" x="712" y="232" width="224" height="12"/>
+      <rect class="s-ok pill" x="712" y="232" width="140" height="12"/><rect class="s-warn pill" x="856" y="232" width="40" height="12"/>
+
+      <rect class="b-surface pill" x="712" y="256" width="224" height="12"/>
+      <rect class="s-ok pill" x="712" y="256" width="72" height="12"/><rect class="s-info pill" x="788" y="256" width="84" height="12"/><rect class="s-warn pill" x="876" y="256" width="24" height="12"/><rect class="s-danger pill" x="904" y="256" width="32" height="12"/>
+    </g>
+  </svg>
+  <div class="name">
+    <h1>GoAudit</h1>
+    <p>Auditoria de pagamentos antes de o dinheiro sair.</p>
+  </div>
+</div>

@@ -1,24 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HoraSimulada } from '@/lib/clock/relogio';
 import { contexto } from '@/lib/contexto';
-import { avaliarAgenda } from '@/lib/rules/motor';
+import { avaliarComIndices } from '@/lib/rules/motor';
+import { todas } from '@/lib/supabase/paginacao';
+import { registrarContratos, type ResultadoContratos } from './contratos';
 import { clienteAgente } from '@/lib/supabase/agentes';
 import { executarOperacao, fecharLotes, type DecisaoAtual, type ResultadoOperacao } from './operacao';
 
-/** Lê todas as linhas (o PostgREST pagina em 1.000). */
-export async function todas<T>(consulta: (de: number, ate: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
-  const out: T[] = [];
-  for (let de = 0; ; de += 1000) {
-    const { data, error } = await consulta(de, de + 999);
-    if (error) throw new Error(error.message);
-    out.push(...(data ?? []));
-    if (!data || data.length < 1000) return out;
-  }
-}
+export { todas };
 
 export const paraHora = (ts: string): HoraSimulada => ts.replace(' ', 'T').slice(0, 16);
 
 export interface ResultadoCiclo extends Partial<ResultadoOperacao> {
+  contratos?: ResultadoContratos;
   hora: HoraSimulada;
   jaExecutado: boolean;
   titulosAvaliados: number;
@@ -69,12 +63,15 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
     const { base, config } = contexto();
     const estado = await estadoAtual(op, sim);
     // 2–4) o que chegou até a hora + motor de regras sobre a agenda efetiva (CSV − retiradas)
-    const avaliacoes = avaliarAgenda(base, config, hora, { retirados: estado.retirados });
+    const { avaliacoes, idx, contratos } = avaliarComIndices(base, config, hora, { retirados: estado.retirados });
     const lancadoPor = new Map(base.titulos.map((t) => [t.titulo_id, t.lancado_por]));
     const donoAlerta = (cod: string) => config.acionamento.por_regra[cod]?.find((p) => !p.startsWith('@')) ?? null;
 
     // 5) agente de operação executa os destinos
     const r = await executarOperacao(op, sim, hora, avaliacoes, estado.atuais, estado.retirados, estado.pendentes, lancadoPor, donoAlerta);
+
+    // 5b) vínculo com contratos, competências e alertas dos desvios D01–D10
+    const rc = await registrarContratos(op, sim, hora, contratos, idx);
 
     // 7) lotes que fecharam
     for (const a of avaliacoes) {
@@ -88,7 +85,7 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
     await op.from('log_auditoria').upsert(
       {
         simulacao_id: sim, data_hora_simulada: horaTs, ator_tipo: 'motor_regras', acao: 'avaliou a agenda', entidade: 'ciclo',
-        entidade_id: hora, motivo: `${avaliacoes.length} títulos avaliados; ${r.decisoesGravadas} decisões mudaram; ${r.retiradas} retiradas; ${enviados} enviados`,
+        entidade_id: hora, motivo: `${avaliacoes.length} títulos avaliados; ${r.decisoesGravadas} decisões mudaram; ${r.retiradas} retiradas; ${enviados} enviados; ${rc.alertas} alertas de contrato`,
         chave: `ciclo|${hora}`,
       },
       { onConflict: 'simulacao_id,chave', ignoreDuplicates: true },
@@ -96,7 +93,7 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
 
     const duracaoMs = Date.now() - t0;
     await op.from('ciclos').update({ situacao: 'concluido', duracao_ms: duracaoMs, titulos_avaliados: avaliacoes.length }).eq('id', cicloId);
-    return { hora, jaExecutado: false, titulosAvaliados: avaliacoes.length, enviados, duracaoMs, ...r };
+    return { hora, jaExecutado: false, titulosAvaliados: avaliacoes.length, enviados, duracaoMs, contratos: rc, ...r };
   } catch (e) {
     await op.from('ciclos').update({ situacao: 'falhou', duracao_ms: Date.now() - t0 }).eq('id', cicloId);
     throw e;

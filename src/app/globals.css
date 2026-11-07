@@ -1,14 +1,26 @@
 @import "tailwindcss";
 
-/* Tokens do GoAudit. Claro por padrão; escuro segue o sistema. */
+/* Tokens do GoAudit. Claro por padrão; escuro segue o sistema.
+   Cores ancoradas no brandbook Gogroup (azul protagonista, tinta #333333, fundo #f5f5f5). */
 :root {
-  --bg: #f6f7f9;
+  /* Paleta oficial Gogroup — usar só em blocos, gráficos e preenchimentos.
+     Nunca texto branco sobre lime ou sky; não juntar laranja, vermelho e rosa. */
+  --brand-blue: #2659a5;
+  --brand-lime: #d7d900;
+  --brand-amber: #f8ae13;
+  --brand-orange: #e5381a;
+  --brand-red: #e5273c;
+  --brand-pink: #e61782;
+  --brand-sky: #3dbfef;
+  --brand-white: #ffffff;
+
+  --bg: #f5f5f5;
   --surface: #ffffff;
   --surface-2: #f1f3f6;
   --border: #e2e6ec;
-  --text: #14181f;
+  --text: #333333;
   --muted: #5d6675;
-  --accent: #2463eb;
+  --accent: var(--brand-blue);
   --accent-soft: #e6eeff;
   --ok: #157f4a;
   --ok-soft: #e3f5ec;
@@ -16,7 +28,7 @@
   --warn-soft: #fff3d6;
   --danger: #c22a2a;
   --danger-soft: #fde8e8;
-  --info: #2463eb;
+  --info: var(--brand-blue);
   --info-soft: #e6eeff;
   --neutral-soft: #eceff3;
 }
@@ -61,6 +73,14 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-neutral-soft: var(--neutral-soft);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-lime: var(--brand-lime);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-red: var(--brand-red);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-sky: var(--brand-sky);
+  --color-brand-white: var(--brand-white);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

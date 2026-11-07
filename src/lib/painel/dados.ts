@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { contexto } from '@/lib/contexto';
 import type { Indices } from '@/lib/data/indices';
+import type { AnaliseContratos } from '@/lib/contratos/tipos';
 import { nomeComparavel, numero } from '@/lib/data/normalizadores';
 import { deMs, fechamentoDoLote, minutosEntre, paraMs, type HoraSimulada } from '@/lib/clock/relogio';
 import { avaliarComIndices, type AvaliacaoTitulo } from '@/lib/rules/motor';
@@ -28,6 +29,7 @@ export interface Painel {
   hora: HoraSimulada;
   avaliacoes: AvaliacaoTitulo[];
   idx: Indices;
+  contratos: AnaliseContratos;
   sim: Simulacao | null;
   usuario: Usuario | null;
 }
@@ -53,10 +55,10 @@ export async function painel(): Promise<Painel> {
     if (!d || d.destino === a.decisao.destino) return a;
     return { ...a, decisao: { ...a.decisao, destino: d.destino as Destino, motivo: d.motivo ?? a.decisao.motivo } };
   });
-  return { hora, avaliacoes, idx: base.idx, sim, usuario };
+  return { hora, avaliacoes, idx: base.idx, contratos: base.contratos, sim, usuario };
 }
 
-const avaliacoesCache = new Map<string, { avaliacoes: AvaliacaoTitulo[]; idx: Indices }>();
+const avaliacoesCache = new Map<string, { avaliacoes: AvaliacaoTitulo[]; idx: Indices; contratos: AnaliseContratos }>();
 
 export function periodo(): { inicio: HoraSimulada; fim: HoraSimulada } {
   const p = contexto().base.politicas.periodo;
@@ -177,7 +179,8 @@ export const GRUPOS_REGRAS: Record<string, { rotulo: string; regras: string[] }>
   alcada: { rotulo: 'Alçada', regras: ['R08', 'R09'] },
   bancario: { rotulo: 'Dados bancários', regras: ['R06', 'R07'] },
   duplicidade: { rotulo: 'Duplicidade', regras: ['R01', 'R02'] },
-  valor: { rotulo: 'Valor atípico', regras: ['R11', 'R12'] },
+  valor: { rotulo: 'Valor atípico', regras: ['R11'] },
+  contrato: { rotulo: 'Contrato', regras: ['D01', 'D02', 'D03', 'D04', 'D05', 'D06', 'D07', 'D08', 'D09', 'D10'] },
   lancador: { rotulo: 'Lançador', regras: ['R13'] },
   mensagem: { rotulo: 'Mensagem', regras: ['R14'] },
 };
@@ -217,6 +220,8 @@ export function nomeFornecedor(hora: HoraSimulada, fornecedorId: string): string
 export interface Coluna {
   titulo: string;
   id: string | null;
+  /** Link para a tela da entidade (ex.: contrato). */
+  href?: string;
   linhas: { rotulo: string; valor: string; alerta?: boolean }[];
 }
 
@@ -250,6 +255,41 @@ async function dadosDoBanco(p: Painel, tituloId: string): Promise<Pick<DetalheTi
   };
 }
 
+/** Coluna "Contrato vinculado" do detalhe do título: contrato, competência, método e faixa esperada. */
+function colunaContrato(p: Painel, av: AvaliacaoTitulo): Coluna | null {
+  const info = av.contrato;
+  if (!info) return null;
+  const v = p.contratos.vinculos.get(av.tituloId);
+  if (!info.contratoId) {
+    return { titulo: 'Contrato vinculado', id: null, linhas: [{ rotulo: 'Vínculo', valor: 'Não é do contrato (OC pontual)' }, { rotulo: 'Por quê', valor: v?.motivo ?? '—' }] };
+  }
+  const c = p.idx.contratoPorId.get(info.contratoId);
+  const desvio = av.resultados.some((r) => !r.passou && /^D/.test(r.codigo));
+  const comp = p.contratos.competencias.find((x) => x.contratoId === info.contratoId && x.competencia === info.competencia);
+  return {
+    titulo: 'Contrato vinculado',
+    id: info.contratoId,
+    href: `/contratos/${info.contratoId}`,
+    linhas: [
+      { rotulo: 'Contrato', valor: `${info.contratoId} · ${c?.tipo ?? ''}` },
+      { rotulo: 'Vínculo', valor: `${METODOS_VINCULO[info.metodo]} (confiança ${info.confianca})`, alerta: info.metodo === 'sem_vinculo' },
+      { rotulo: 'Competência', valor: info.competencia ?? '—' },
+      { rotulo: 'Esperado', valor: brl(info.valorEsperado), alerta: desvio },
+      { rotulo: 'Faixa', valor: info.faixaMin != null ? `${brl(info.faixaMin)} a ${brl(info.faixaMax)}` : '—' },
+      ...(comp && comp.classe !== 'fixo' ? [{ rotulo: 'Cobrado no mês', valor: brl(comp.valorCobrado) }] : []),
+      { rotulo: 'Gestor', valor: c ? `${c.gestor_contrato} (${c.gestor_pessoa_id})` : '—' },
+    ],
+  };
+}
+
+export const METODOS_VINCULO: Record<string, string> = {
+  oc_contrato: 'OC do contrato',
+  fornecedor_sem_oc: 'Fornecedor (dispensado de OC)',
+  frete_integracao: 'Integração de frete',
+  oc_pontual: 'OC pontual',
+  sem_vinculo: 'Sem vínculo',
+};
+
 const brl = (v: number | null | undefined) =>
   v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -263,7 +303,7 @@ export async function detalhe(p: Painel, tituloId: string): Promise<DetalheTitul
   const f = d.fornecedor;
   const falhou = (cod: string) => av.resultados.some((r) => r.codigo === cod && !r.passou);
 
-  const colunas: Coluna[] = [
+  const colunas: Coluna[] = ([
     {
       titulo: 'Título no ERP',
       id: t.titulo_id,
@@ -329,6 +369,7 @@ export async function detalhe(p: Painel, tituloId: string): Promise<DetalheTitul
               { rotulo: 'Situação', valor: d.dda?.situacao ?? '—', alerta: falhou('R02') },
             ],
     },
+    colunaContrato(p, av),
     {
       titulo: 'Cadastro do fornecedor',
       id: f?.fornecedor_id ?? null,
@@ -343,7 +384,7 @@ export async function detalhe(p: Painel, tituloId: string): Promise<DetalheTitul
           ]
         : [{ rotulo: 'Fornecedor', valor: 'Não cadastrado', alerta: true }],
     },
-  ];
+  ] as (Coluna | null)[]).filter((c): c is Coluna => c !== null);
 
   // Mensagens relacionadas: do domínio/telefone oficial, citando a NF ou o nome do fornecedor.
   const dominio = f?.email_cadastrado.split('@')[1]?.toLowerCase() ?? '';
@@ -416,6 +457,8 @@ export async function solicitacoesPendentes(p: Painel): Promise<SolicitacaoPende
 export interface Alerta {
   id: number;
   tipo: string;
+  contrato_id: string | null;
+  competencia: string | null;
   titulo_id: string | null;
   dono_pessoa_id: string | null;
   regras: string[];
@@ -427,7 +470,7 @@ export interface Alerta {
 export async function alertasAbertos(p: Painel): Promise<Alerta[]> {
   if (!p.sim) return [];
   const { data } = await (await supabaseServidor())
-    .from('alertas').select('id, tipo, titulo_id, dono_pessoa_id, regras, mensagem, valor, situacao')
+    .from('alertas').select('id, tipo, titulo_id, dono_pessoa_id, regras, mensagem, valor, situacao, contrato_id, competencia')
     .eq('simulacao_id', p.sim.id).eq('situacao', 'aberto').order('id', { ascending: false }).limit(200);
   return (data ?? []) as Alerta[];
 }

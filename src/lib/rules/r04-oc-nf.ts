@@ -3,8 +3,8 @@ import { brl, falhou, passou, type Regra } from './tipos';
 
 /**
  * R04 · OC × NF. A NF pode passar da OC em até max(% , R$) da política; a OC precisa
- * estar aprovada. Categorias dispensadas de OC passam. Em contrato, a referência é
- * o valor mensal.
+ * estar aprovada. Categorias dispensadas de OC passam. Na OC do próprio contrato, o valor
+ * fica com o módulo de contratos (D01/D05); em outra OC do tipo contrato, a referência é o valor mensal.
  */
 export const r04OcNf: Regra = (d, ctx) => {
   const t = d.titulo;
@@ -18,6 +18,11 @@ export const r04OcNf: Regra = (d, ctx) => {
     return falhou('R04', 'conferencia', `A OC ${d.oc.oc_id} está "${d.oc.status.replace('_', ' ')}", não aprovada para pagamento.`, ev);
   }
   if (!d.nf) return passou('R04', 'sem NF para comparar', ev);
+  // Título na OC do próprio contrato: o valor é conferido por competência no módulo de contratos
+  // (faixa com reajuste, multa e juros: desvios D01/D02/D05). Comparar aqui duplicaria o alerta.
+  if (d.contrato && d.contrato.oc_id && d.contrato.oc_id === d.oc.oc_id) {
+    return passou('R04', 'valor conferido pelo contrato, por competência', [...ev, d.contrato.contrato_id]);
+  }
   ev.push(d.nf.chave_acesso);
 
   const ehContrato = d.oc.tipo === 'contrato' || !!d.contrato;

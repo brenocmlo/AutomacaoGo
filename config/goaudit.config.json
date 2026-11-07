@@ -1,5 +1,5 @@
 {
-  "$comentario": "Parâmetros que NÃO estão em politicas.csv. Tudo o que está em politicas.csv (alçadas, tolerâncias de 3 vias, custos, horários de lote) é lido de lá.",
+  "$comentario": "Parâmetros que NÃO estão em politicas.csv. Tudo o que está em politicas.csv (alçadas, tolerâncias de 3 vias, multa e juros, custos, horários de lote) é lido de lá.",
   "base_dir_padrao": "data/demo",
   "relogio": {
     "passo_minutos": 60
@@ -26,14 +26,35 @@
     "R03": { "tolerancia_arredondamento": 0.10 },
     "R07": { "janela_dias": 30 },
     "R11": { "multiplo_mediana": 5, "minimo_historico": 3 },
-    "R12": {
-      "faixa_contrato_fixo": 0.05,
-      "faixa_utilidades": 0.30,
-      "meses_media_utilidades": 3
-    },
     "R13": { "dias_admissao_recente": 45, "valor_alto": 20000 }
   },
+  "contratos": {
+    "$comentario": "Vínculo título × contrato, valor esperado por competência e desvios D01–D10. Substitui a antiga R12 (variação mensal). Categorias não listadas em classe_por_categoria são contratos de valor fixo.",
+    "classe_por_categoria": { "utilidades": "utilidade", "frete": "frete" },
+    "origem_integracao_frete": "integracao_frete",
+    "tolerancia_valor": 0.10,
+    "dias_por_mes_juros": 30,
+    "reajuste": {
+      "defasagem_indice_meses": 1,
+      "folga_pontos": 0.005,
+      "teto_sem_indice": 0.10,
+      "janela_reconhecimento_pontos": 0.01
+    },
+    "utilidade": {
+      "faixa": 0.25,
+      "competencias_media": 3,
+      "limite_erro_digitacao": 0.2
+    },
+    "frete": {
+      "faixa_abaixo": 0.5,
+      "faixa_acima": 0.7,
+      "fator_sazonal": { "11": 1.3, "12": 1.2 }
+    },
+    "alerta_sem_titulo_dias_uteis": 5,
+    "aviso_proximos_dias": 30
+  },
   "acionamento": {
+    "$comentario": "Tokens: @dono = gestor do contrato ou dono da categoria; @gestor = gestor_pessoa_id do contrato; @responsavel = comprador da OC (ou responsável interno do fornecedor).",
     "dono_por_categoria": {
       "produto": "PS04",
       "embalagens": "PS04",
@@ -58,9 +79,18 @@
       "R09": ["PS01"],
       "R10": ["@dono"],
       "R11": ["PS01"],
-      "R12": ["@dono"],
       "R13": ["PS01"],
-      "R14": ["PS01", "PS08"]
+      "R14": ["PS01", "PS08"],
+      "D01": ["@gestor", "PS01"],
+      "D02": ["PS01"],
+      "D03": ["PS01"],
+      "D04": ["@gestor"],
+      "D05": ["@gestor"],
+      "D06": ["@gestor", "PS01"],
+      "D07": ["@gestor"],
+      "D08": ["PS01"],
+      "D09": ["@gestor"],
+      "D10": ["PS01", "@responsavel"]
     }
   }
 }

@@ -1,0 +1,2 @@
+titulo_id,fornecedor_id,numero_nf_digitado,oc_id,parcela,valor,vencimento,forma_pagamento,linha_digitavel,cnpj_beneficiario_boleto,origem_lancamento,lancado_por,data_lancamento,status,data_pagamento,banco_pagador,lote_remessa,historico,nivel_aprovacao
+TP900055,FP5639,,OC-35915,1/1,46315.00,2026-11-04,boleto,36895651032113048090400009000530616200004631500,95.893.437/0001-08,manual,usuario_03,2026-10-29 10:00:00,agendado,,Banco Meridiano,RM20261104-MER,Aluguel - competência 2026-11 - Iracema Shopping,aprovador

@@ -3,9 +3,10 @@ import path from 'node:path';
 import { lerCsv, lerJsonl } from './csv';
 import type {
   AgendaItem, AlteracaoCadastro, AprovacaoErp, BoletoDDA, Comunicacao, Contrato, Duplicata,
-  ExtratoLitoral, ExtratoMeridiano, Feriado, Fornecedor, Lote, NotaFiscal, PedidoCompra,
+  ExtratoLitoral, ExtratoMeridiano, Feriado, Fornecedor, IndiceReajuste, Lote, NotaFiscal, PedidoCompra,
   Recebimento, RetornoRemessa, Titulo, Usuario,
 } from './tipos';
+import { raizProjeto } from '@/lib/config/config';
 import { carregarPoliticas, type Politicas } from '@/lib/config/politicas';
 import { dataBRparaISO } from './normalizadores';
 import { paraMs, type HoraSimulada } from '@/lib/clock/relogio';
@@ -32,6 +33,8 @@ export interface BaseEntrada {
   usuarios: Usuario[];
   aprovacoesErp: AprovacaoErp[];
   feriados: Feriado[];
+  /** Fictício: ver data/complementos/LEIAME.md. */
+  indicesReajuste: IndiceReajuste[];
 }
 
 function arquivo(dir: string, nome: string): string {
@@ -50,6 +53,17 @@ function lerComunicacoes(dir: string): Comunicacao[] {
   if (fs.existsSync(jsonl)) out.push(...lerJsonl<Comunicacao>(jsonl));
   out.push(...opcional<Comunicacao>(dir, 'comunicacoes_fornecedores.csv'));
   return out;
+}
+
+/**
+ * Índices de reajuste (fictícios): vêm da pasta da base ou, se ausentes, de data/complementos.
+ * Assim a base original do desafio continua intocada.
+ */
+function lerIndicesReajuste(dir: string): IndiceReajuste[] {
+  const nome = 'indices_reajuste.csv';
+  if (fs.existsSync(arquivo(dir, nome))) return lerCsv<IndiceReajuste>(arquivo(dir, nome));
+  const comp = path.join(raizProjeto(), 'data', 'complementos');
+  return fs.existsSync(arquivo(comp, nome)) ? lerCsv<IndiceReajuste>(arquivo(comp, nome)) : [];
 }
 
 export function carregarBase(dir: string): BaseEntrada {
@@ -76,6 +90,7 @@ export function carregarBase(dir: string): BaseEntrada {
     usuarios: opcional<Usuario>(dir, 'usuarios_sistema.csv'),
     aprovacoesErp: opcional<AprovacaoErp>(dir, 'aprovacoes.csv'),
     feriados: opcional<Feriado>(dir, 'feriados_bancarios.csv'),
+    indicesReajuste: lerIndicesReajuste(dir),
   };
 }
 

@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, Mail, MessageCircle, X, XCircle } from 'lu
 import { Badge, Card, SEVERIDADES, URGENCIAS, brl, destinoUi, horaBR } from '@/components/ui';
 import { AcoesTitulo } from '@/components/acoes-titulo';
 import type { DetalheTitulo } from '@/lib/painel/dados';
+import { NOME_DESVIO } from '@/lib/contratos/tipos';
 
 const ATORES: Record<string, string> = {
   motor_regras: 'Motor de regras', agente_operacao: 'Agente de operação', agente_validacao: 'Agente de validação',
@@ -12,7 +13,8 @@ const ATORES: Record<string, string> = {
 const NOMES_REGRAS: Record<string, string> = {
   R01: 'Duplicidade', R02: 'Já pago por outro caminho', R03: 'NF × título', R04: 'OC × NF', R05: 'Fornecedor',
   R06: 'Boleto', R07: 'Destino TED/PIX', R08: 'Alçada e fracionamento', R09: 'Aprovação dupla', R10: 'Recebimento',
-  R11: 'Valor atípico', R12: 'Variação mensal', R13: 'Lançador', R14: 'Mensagem de risco',
+  R11: 'Valor atípico', R13: 'Lançador', R14: 'Mensagem de risco',
+  ...NOME_DESVIO,
 };
 
 export function DetalhePainel({ det, fecharHref, simulacaoId, podeDecidir }: {
@@ -35,6 +37,7 @@ export function DetalhePainel({ det, fecharHref, simulacaoId, podeDecidir }: {
             <span className="tabular text-lg font-semibold">{brl(av.valor)}</span>
             <Badge tom={destinoUi(av.decisao.destino).tom}>{destinoUi(av.decisao.destino).rotulo}</Badge>
             <Badge tom={URGENCIAS[av.urgencia].tom}>{URGENCIAS[av.urgencia].rotulo}</Badge>
+            {av.conformeContrato && <Badge tom="ok" title="Rotina contratual: vínculo alto, valor na faixa, único na competência, contrato vigente">Conforme contrato</Badge>}
             <span className="text-xs text-muted">fecha {horaBR(av.fechamento)}</span>
           </div>
         </div>
@@ -58,7 +61,9 @@ export function DetalhePainel({ det, fecharHref, simulacaoId, podeDecidir }: {
           <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
             {det.colunas.map((c) => (
               <div key={c.titulo} className="rounded-lg border border-border p-3">
-                <p className="text-xs font-semibold">{c.titulo}</p>
+                <p className="text-xs font-semibold">
+                  {c.href ? <Link href={c.href} className="text-accent hover:underline">{c.titulo}</Link> : c.titulo}
+                </p>
                 {c.id && <p className="truncate font-mono text-[10px] text-muted" title={c.id}>{c.id}</p>}
                 <dl className="mt-2 space-y-1 text-xs">
                   {c.linhas.map((l) => (

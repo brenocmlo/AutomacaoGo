@@ -1,15 +1,28 @@
-cenario_id,descricao,hora_avaliacao,titulo_id,regras_esperadas,destino_esperado,notificar_esperado
-C01,"Mesmo título lançado duas vezes, NF digitada com zeros à esquerda e com série",2026-11-02T08:00,TP900003,,LIBERADO_AUTOMATICO,
-C01,"Mesmo título lançado duas vezes, NF digitada com zeros à esquerda e com série",2026-11-02T08:00,TP900004,R01,RETIRADO,PS01
-C02,Título com um zero a mais (10× a duplicata da NF),2026-11-02T08:00,TP900008,R03 R11,RETIRADO,PS01
-C03,Título já pago por PIX manual (extrato do Litoral) e ainda agendado,2026-11-02T08:00,TP900011,R02,RETIRADO,PS02
-C04,Boleto de segunda via com beneficiário de outro CNPJ e banco diferente do histórico,2026-11-02T08:00,TP900019,R06,RETIRADO,PS01 PS08
-C08,NF 4% acima da OC de embalagem,2026-11-02T08:00,TP900024,R04,RETIRADO,PS04
-C09,"NF 1,5% acima da OC (dentro da tolerância)",2026-11-02T08:00,TP900028,,LIBERADO_AUTOMATICO,
-C10,"Título pago com 10 dias de atraso, com multa e juros dentro do teto",2026-11-02T08:00,TP900031,,LIBERADO_AUTOMATICO,
-C11,Três títulos de R$ 4.900 do mesmo fornecedor e NF no mesmo dia,2026-11-02T08:00,TP900035,R08,AGUARDANDO_APROVACAO,PS01
-C11,Três títulos de R$ 4.900 do mesmo fornecedor e NF no mesmo dia,2026-11-02T08:00,TP900036,R08,AGUARDANDO_APROVACAO,PS01
-C11,Três títulos de R$ 4.900 do mesmo fornecedor e NF no mesmo dia,2026-11-02T08:00,TP900037,R08,AGUARDANDO_APROVACAO,PS01
-C12,"Aluguel sem NF, igual ao contrato",2026-11-02T08:00,TP900040,,CONFERIDO_AGUARDANDO_APROVADOR,
-C15,Título lançado por usuário já desligado,2026-11-02T08:00,TP900044,R13,RETIRADO,PS01
-C16,"Filial com outra razão social na NF, mesma raiz de CNPJ",2026-11-02T08:00,TP900048,,LIBERADO_AUTOMATICO,
+cenario_id,descricao,hora_avaliacao,alertas_esperados,avisar_esperado,contrato_id,competencia,selo,aprovador_esperado,titulo_id,regras_esperadas,destino_esperado,notificar_esperado
+C01,"Mesmo título lançado duas vezes, NF digitada com zeros à esquerda e com série",2026-11-02T08:00,,,,,,,TP900003,,LIBERADO_AUTOMATICO,
+C01,"Mesmo título lançado duas vezes, NF digitada com zeros à esquerda e com série",2026-11-02T08:00,,,,,,,TP900004,R01,RETIRADO,PS01
+C02,Título com um zero a mais (10× a duplicata da NF),2026-11-02T08:00,,,,,,,TP900008,R03 R11,RETIRADO,PS01
+C03,Título já pago por PIX manual (extrato do Litoral) e ainda agendado,2026-11-02T08:00,,,,,,,TP900011,R02,RETIRADO,PS02
+C04,Boleto de segunda via com beneficiário de outro CNPJ e banco diferente do histórico,2026-11-02T08:00,,,,,,,TP900019,R06,RETIRADO,PS01 PS08
+C08,NF 4% acima da OC de embalagem,2026-11-02T08:00,,,,,,,TP900024,R04,RETIRADO,PS04
+C09,"NF 1,5% acima da OC (dentro da tolerância)",2026-11-02T08:00,,,,,,,TP900028,,LIBERADO_AUTOMATICO,
+C10,"Título pago com 10 dias de atraso, com multa e juros dentro do teto",2026-11-02T08:00,,,,,,,TP900031,,LIBERADO_AUTOMATICO,
+C11,Três títulos de R$ 4.900 do mesmo fornecedor e NF no mesmo dia,2026-11-02T08:00,,,,,,,TP900035,R08,AGUARDANDO_APROVACAO,PS01
+C11,Três títulos de R$ 4.900 do mesmo fornecedor e NF no mesmo dia,2026-11-02T08:00,,,,,,,TP900036,R08,AGUARDANDO_APROVACAO,PS01
+C11,Três títulos de R$ 4.900 do mesmo fornecedor e NF no mesmo dia,2026-11-02T08:00,,,,,,,TP900037,R08,AGUARDANDO_APROVACAO,PS01
+C12,"Aluguel sem NF, igual ao contrato",2026-11-02T08:00,,,CT-0135,2026-11,conforme_contrato,,TP900040,,CONFERIDO_AGUARDANDO_APROVADOR,
+C15,Título lançado por usuário já desligado,2026-11-02T08:00,,,,,,,TP900044,R13,RETIRADO,PS01
+C16,"Filial com outra razão social na NF, mesma raiz de CNPJ",2026-11-02T08:00,,,,,,,TP900048,,LIBERADO_AUTOMATICO,
+C18,Fee de agência cobrado duas vezes na mesma competência,2026-11-02T08:00,,,CT-0106,2026-11,conforme_contrato,,TP900050,,CONFERIDO_AGUARDANDO_APROVADOR,
+C18,Fee de agência cobrado duas vezes na mesma competência,2026-11-02T08:00,,,CT-0106,2026-11,,,TP900052,D03,RETIRADO,PS01
+C19,Aluguel 18% acima do contrato fora do mês de reajuste,2026-11-02T08:00,,,CT-0138,2026-11,,,TP900055,D01,RETIRADO,PS10 PS01
+C20,"Assinatura reajustada no mês certo, dentro do IPCA",2026-11-02T08:00,,,CT-9901,2026-11,conforme_contrato,,TP900058,,LIBERADO_AUTOMATICO,
+C21,"Serviço reajustado no mês certo, 12% acima do índice",2026-11-02T08:00,,,CT-9902,2026-11,,,TP900061,D05,RETIRADO,PS10
+C22,Conta de consumo 10 vezes menor que a média,2026-11-02T08:00,D02,PS01,CT-0103,2026-11,,,TP900065,,LIBERADO_AUTOMATICO,
+C23,Conta de consumo 60% acima da média,2026-11-02T08:00,D09,PS10,CT-0114,2026-11,,,TP900069,,CONFERIDO_AGUARDANDO_APROVADOR,
+C24,Assinatura sem título a 5 dias úteis do vencimento,2026-11-02T08:00,D04,PS11,CT-9903,2026-11,,,,,,
+C25,Cobrança de contrato com vigência encerrada,2026-11-02T08:00,,,CT-9904,2026-11,,,TP900073,D06,RETIRADO,PS10 PS01
+C26,Campanha de agência em OC pontual aprovada,2026-11-02T08:00,,,,,,,TP900076,,LIBERADO_AUTOMATICO,
+C27,Frete de outubro cerca de 55% acima da estimativa,2026-11-02T08:00,,,CT-0145,2026-10,,,,,,
+C28,"Mensalidade paga 9 dias atrasada com 2,3% a mais",2026-11-02T08:00,,,CT-9905,2026-10,conforme_contrato,,TP900079,,LIBERADO_AUTOMATICO,
+C29,Aluguel acima de R$ 50 mil no valor exato do contrato,2026-11-02T08:00,,,CT-0144,2026-11,conforme_contrato,PS03,TP432883,,CONFERIDO_AGUARDANDO_APROVADOR,

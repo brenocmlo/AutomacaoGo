@@ -15,8 +15,18 @@ export interface ConfigGoAudit {
     R03: { tolerancia_arredondamento: number };
     R07: { janela_dias: number };
     R11: { multiplo_mediana: number; minimo_historico: number };
-    R12: { faixa_contrato_fixo: number; faixa_utilidades: number; meses_media_utilidades: number };
     R13: { dias_admissao_recente: number; valor_alto: number };
+  };
+  contratos: {
+    classe_por_categoria: Record<string, 'utilidade' | 'frete'>;
+    origem_integracao_frete: string;
+    tolerancia_valor: number;
+    dias_por_mes_juros: number;
+    reajuste: { defasagem_indice_meses: number; folga_pontos: number; teto_sem_indice: number; janela_reconhecimento_pontos: number };
+    utilidade: { faixa: number; competencias_media: number; limite_erro_digitacao: number };
+    frete: { faixa_abaixo: number; faixa_acima: number; fator_sazonal: Record<string, number> };
+    alerta_sem_titulo_dias_uteis: number;
+    aviso_proximos_dias: number;
   };
   acionamento: {
     dono_por_categoria: Record<string, string>;

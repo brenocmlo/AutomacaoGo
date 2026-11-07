@@ -1,4 +1,4 @@
-import { Bell, ClipboardList, Clock, FastForward, LayoutDashboard, LogOut, RotateCcw, ScrollText, ShieldCheck } from 'lucide-react';
+import { Bell, ClipboardList, FileSignature, Clock, FastForward, LayoutDashboard, LogOut, RotateCcw, ScrollText, ShieldCheck } from 'lucide-react';
 import { NavLink } from '@/components/nav-link';
 import { Badge, PAPEIS, horaBR } from '@/components/ui';
 import { avancarRelogio, reiniciarRelogio, sair } from '@/app/acoes';
@@ -24,6 +24,7 @@ export default async function PainelLayout({ children }: LayoutProps<'/'>) {
         <nav className="flex flex-col gap-1">
           <NavLink href="/" icone={<LayoutDashboard className="size-4" />}>Visão geral</NavLink>
           <NavLink href="/auditoria" icone={<ClipboardList className="size-4" />}>Fila de auditoria</NavLink>
+          <NavLink href="/contratos" icone={<FileSignature className="size-4" />}>Contratos</NavLink>
           <NavLink href="/alertas" icone={<Bell className="size-4" />} desabilitado={local}>Alertas e caixa</NavLink>
           <NavLink href="/log" icone={<ScrollText className="size-4" />} desabilitado>Log e gargalos</NavLink>
         </nav>

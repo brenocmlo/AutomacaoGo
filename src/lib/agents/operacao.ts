@@ -49,7 +49,12 @@ const ASSUNTO_POR_REGRA: Record<string, string> = {
   R09: 'Exige aprovação dupla',
   R10: 'Mercadoria sem recebimento',
   R11: 'Valor atípico',
-  R12: 'Variação mensal fora da referência',
+  D01: 'Valor acima da faixa do contrato',
+  D03: 'Mais de um título na mesma competência do contrato',
+  D05: 'Reajuste fora do previsto no contrato',
+  D06: 'Cobrança fora da vigência do contrato',
+  D08: 'Forma de pagamento diferente da do contrato',
+  D10: 'Título recorrente sem vínculo com contrato',
   R13: 'Lançamento por usuário irregular',
   R14: 'Mensagem de risco',
 };
@@ -191,12 +196,13 @@ export async function executarOperacao(
   }
 
   // 5) Alertas (regras de severidade "alerta": não mudam o destino)
+  // Desvios contratuais (D01–D10) têm alerta próprio, por competência e por pessoa (agents/contratos.ts).
   const alertas = avaliacoes.flatMap((a) =>
     a.resultados
-      .filter((x) => !x.passou && x.severidade === 'alerta')
+      .filter((x) => !x.passou && x.severidade === 'alerta' && !/^D/.test(x.codigo))
       .map((x) => ({
         simulacao_id: sim,
-        tipo: x.codigo === 'R12' ? 'variacao_mensal' : x.codigo === 'R14' ? 'golpe' : 'divergencia',
+        tipo: x.codigo === 'R14' ? 'golpe' : 'divergencia',
         titulo_id: a.tituloId,
         fornecedor_id: a.fornecedorId,
         dono_pessoa_id: donoAlerta(x.codigo, a),

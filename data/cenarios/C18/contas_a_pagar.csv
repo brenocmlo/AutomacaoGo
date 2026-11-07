@@ -1,0 +1,3 @@
+titulo_id,fornecedor_id,numero_nf_digitado,oc_id,parcela,valor,vencimento,forma_pagamento,linha_digitavel,cnpj_beneficiario_boleto,origem_lancamento,lancado_por,data_lancamento,status,data_pagamento,banco_pagador,lote_remessa,historico,nivel_aprovacao
+TP900050,FP1710,900049,OC-35901,1/1,24563.00,2026-11-04,ted,,,xml_portal,usuario_03,2026-10-29 10:00:00,agendado,,Banco Meridiano,RM20261104-MER,NF 900049 parc 1/1 - Trama Branding - mensalidade,aprovador
+TP900052,FP1710,900051,OC-35901,1/1,24563.00,2026-11-04,ted,,,xml_portal,usuario_03,2026-10-30 15:20:00,agendado,,Banco Meridiano,RM20261104-MER,NF 900051 parc 1/1 - Trama Branding - mensalidade,aprovador
