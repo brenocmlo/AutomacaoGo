@@ -57,14 +57,14 @@ export default async function PainelLayout({ children }: LayoutProps<'/'>) {
                   <input type="hidden" name="passos" value={p} />
                   <button
                     disabled={hora >= fim}
-                    className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2 disabled:opacity-40"
+                    className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
                   >
                     <FastForward className="size-3" />+{p}h
                   </button>
                 </form>
               ))}
               <form action={reiniciarRelogio}>
-                <button className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
+                <button className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-2"
                   title={local ? 'Voltar ao início' : 'Encerra a simulação atual e começa outra (o histórico fica)'}>
                   <RotateCcw className="size-3" />{local ? 'Reiniciar' : 'Nova simulação'}
                 </button>

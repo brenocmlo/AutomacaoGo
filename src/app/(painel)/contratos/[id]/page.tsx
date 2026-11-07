@@ -82,7 +82,7 @@ export default async function Contrato({ params }: PageProps<'/contratos/[id]'>)
       <Card className="overflow-x-auto">
         <CardTitulo>Competências e títulos</CardTitulo>
         <table className="w-full min-w-[760px] text-sm">
-          <thead className="border-b border-border text-left text-xs text-muted">
+          <thead className="border-b border-border bg-surface-2 text-left text-xs text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Competência</th>
               <th className="px-3 py-2 font-medium">Vencimento previsto</th>

@@ -31,19 +31,19 @@ export default async function Contratos({ searchParams }: PageProps<'/contratos'
       <Card className="p-3">
         <form className="flex flex-wrap items-end gap-2 text-sm">
           <label className="flex flex-col gap-1 text-xs text-muted">Tipo
-            <select name="tipo" defaultValue={filtros.tipo ?? ''} className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text">
+            <select name="tipo" defaultValue={filtros.tipo ?? ''} className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text focus:border-accent">
               <option value="">Todos</option>
               {tipos.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted">Gestor
-            <select name="gestor" defaultValue={filtros.gestor ?? ''} className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text">
+            <select name="gestor" defaultValue={filtros.gestor ?? ''} className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text focus:border-accent">
               <option value="">Todos</option>
               {gestores.map(([id, nome]) => <option key={id} value={id}>{nome} ({id})</option>)}
             </select>
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted">Situação
-            <select name="situacao" defaultValue={filtros.situacao ?? ''} className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text">
+            <select name="situacao" defaultValue={filtros.situacao ?? ''} className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text focus:border-accent">
               <option value="">Todas</option>
               {Object.entries(SITUACOES).map(([k, s]) => <option key={k} value={k}>{s.rotulo}</option>)}
             </select>
@@ -51,14 +51,14 @@ export default async function Contratos({ searchParams }: PageProps<'/contratos'
           <label className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5 text-xs">
             <input type="checkbox" name="janela" value="30" defaultChecked={!!filtros.janela} />Vence ou reajusta em 30 dias
           </label>
-          <button className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white">Filtrar</button>
+          <button className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-solid">Filtrar</button>
           {Object.values(filtros).some(Boolean) && <Link href="/contratos" className="text-xs text-muted hover:text-text">Limpar</Link>}
         </form>
       </Card>
 
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[1000px] text-sm">
-          <thead className="border-b border-border text-left text-xs text-muted">
+          <thead className="border-b border-border bg-surface-2 text-left text-xs text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Contrato</th>
               <th className="px-3 py-2 font-medium">Fornecedor</th>

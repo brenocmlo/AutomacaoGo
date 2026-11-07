@@ -41,7 +41,7 @@ export default async function FilaAuditoria({ searchParams }: PageProps<'/audito
 
       <Card className="p-3">
         <form className="flex flex-wrap items-center gap-2 text-sm">
-          <div className="flex min-w-48 flex-1 items-center gap-2 rounded-md border border-border bg-bg px-2">
+          <div className="flex min-w-48 flex-1 items-center gap-2 rounded-md border border-border bg-bg px-2 focus-within:border-accent focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
             <Search className="size-4 text-muted" />
             <input name="busca" defaultValue={filtros.busca} placeholder="Título, código ou nome do fornecedor" className="w-full bg-transparent py-1.5 outline-none" />
           </div>
@@ -50,7 +50,7 @@ export default async function FilaAuditoria({ searchParams }: PageProps<'/audito
           <Select nome="grupo" valor={filtros.grupo} vazio="Todas as regras" opcoes={Object.entries(GRUPOS_REGRAS).map(([k, v]) => [k, v.rotulo])} />
           <Select nome="banco" valor={filtros.banco} vazio="Todos os bancos" opcoes={bancos.map((b) => [b, b])} />
           <Select nome="lote" valor={filtros.lote} vazio="Todos os lotes" opcoes={lotes.map((l) => [l, l])} />
-          <button className="rounded-md bg-accent px-3 py-1.5 font-medium text-white">Filtrar</button>
+          <button className="rounded-md bg-accent px-4 py-2 font-medium text-on-solid">Filtrar</button>
           {filtrosAtivos && <Link href="/auditoria" className="flex items-center gap-1 text-xs text-muted hover:text-text"><X className="size-3" />Limpar</Link>}
         </form>
       </Card>
@@ -116,7 +116,7 @@ export default async function FilaAuditoria({ searchParams }: PageProps<'/audito
 
 function Select({ nome, valor, vazio, opcoes }: { nome: string; valor?: string; vazio: string; opcoes: [string, string][] }) {
   return (
-    <select name={nome} defaultValue={valor ?? ''} className="rounded-md border border-border bg-bg px-2 py-1.5">
+    <select name={nome} defaultValue={valor ?? ''} className="rounded-md border border-border bg-bg px-2 py-1.5 focus:border-accent">
       <option value="">{vazio}</option>
       {opcoes.map(([v, r]) => <option key={v} value={v}>{r}</option>)}
     </select>

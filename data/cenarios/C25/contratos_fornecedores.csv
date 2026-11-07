@@ -1,2 +1,2 @@
 contrato_id,fornecedor_id,oc_id,tipo,objeto,valor_mensal,valor_variavel,condicao_pagamento,dia_vencimento,forma_pagamento,inicio_vigencia,prazo,fim_vigencia_atual,indice_reajuste,mes_reajuste,data_ultimo_reajuste,aviso_previo_dias,multa_rescisoria,gestor_contrato,gestor_pessoa_id,status
-CT-9904,FP9904,OC-90071,prestação de serviço contínuo,prestação de serviço contínuo Jardim Pleno,2750.00,não,mensal dia 4,4,ted,2024-10-01,24 meses,2026-09-30,IPCA,03,2025-03-01,30,1 mensalidade,Tiago Lins,PS10,encerrado
+CT-9904,FP9904,OC-90078,prestação de serviço contínuo,prestação de serviço contínuo Jardim Pleno,2750.00,não,mensal dia 4,4,ted,2024-10-01,24 meses,2026-09-30,IPCA,03,2025-03-01,30,1 mensalidade,Tiago Lins,PS10,encerrado

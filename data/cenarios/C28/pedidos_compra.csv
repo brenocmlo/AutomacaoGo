@@ -1,2 +1,2 @@
 oc_id,cod_fornecedor_compras,cnpj_fornecedor,nome_fornecedor,data_emissao,descricao,tipo,valor_total,valor_mensal,condicao_pagamento,centro_custo,aprovado_por,data_aprovacao,status,quantidade,unidade,valor_unitario,solicitante,comprador,local_entrega,data_entrega_prevista
-OC-90077,FC9905,99000005000181,ROTA CLARA SISTEMAS LTDA,2025-10-20,Contrato Rota Clara,contrato,37200.00,3100.00,mensal dia 26,Tecnologia,Diego Prado,2025-10-21,aprovada,12,mês,3100.0000,Paula Viana,Diego Prado,,
+OC-90084,FC9905,99000005000181,ROTA CLARA SISTEMAS LTDA,2025-10-20,Contrato Rota Clara,contrato,37200.00,3100.00,mensal dia 26,Tecnologia,Diego Prado,2025-10-21,aprovada,12,mês,3100.0000,Paula Viana,Diego Prado,,

@@ -1,2 +1,2 @@
 dda_id,data_registro,cnpj_pagador,banco_cobrador,nome_banco_cobrador,beneficiario,cnpj_beneficiario,numero_documento,nosso_numero,valor,vencimento,linha_digitavel,situacao,data_situacao
-DDA9900064,2026-10-21 03:00:00,41208533000302,146,,Companhia Energética Costa Leste S.A.,36.308.720/0001-66,900062/1,50000900063,4719.19,2026-11-04,14694519652276240090500009000639116200000471919,em aberto,2026-10-21
+DDA9900071,2026-10-21 03:00:00,41208533000302,146,,Companhia Energética Costa Leste S.A.,36.308.720/0001-66,900069/1,50000900070,4719.19,2026-11-04,14694519652276240090500009000704216200000471919,em aberto,2026-10-21

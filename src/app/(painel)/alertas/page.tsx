@@ -46,7 +46,7 @@ export default async function Alertas({ searchParams }: PageProps<'/alertas'>) {
             <form action={aprovarEmLote} className="border-b border-border p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <p className="text-sm">Conferidos pelo agente, dentro da sua alçada: <strong>{emLote.length}</strong> títulos · {brl(emLote.reduce((s, x) => s + Number(x.valor), 0), true)}</p>
-                <button className="rounded-md bg-ok px-3 py-1.5 text-xs font-medium text-white">Aprovar selecionados</button>
+                <button className="rounded-md bg-ok px-3 py-1.5 text-xs font-medium text-on-solid">Aprovar selecionados</button>
               </div>
               <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-md border border-border">
                 {emLote.map((s) => (

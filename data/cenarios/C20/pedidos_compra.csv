@@ -1,2 +1,2 @@
 oc_id,cod_fornecedor_compras,cnpj_fornecedor,nome_fornecedor,data_emissao,descricao,tipo,valor_total,valor_mensal,condicao_pagamento,centro_custo,aprovado_por,data_aprovacao,status,quantidade,unidade,valor_unitario,solicitante,comprador,local_entrega,data_entrega_prevista
-OC-90056,FC9901,99000001000101,NUVEM SERENA SOFTWARE LTDA,2025-10-20,Contrato Nuvem Serena,contrato,28800.00,2400.00,mensal dia 4,Tecnologia,Diego Prado,2025-10-21,aprovada,12,mês,2400.0000,Paula Viana,Diego Prado,,
+OC-90063,FC9901,99000001000101,NUVEM SERENA SOFTWARE LTDA,2025-10-20,Contrato Nuvem Serena,contrato,28800.00,2400.00,mensal dia 4,Tecnologia,Diego Prado,2025-10-21,aprovada,12,mês,2400.0000,Paula Viana,Diego Prado,,

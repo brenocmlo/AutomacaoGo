@@ -4,6 +4,7 @@ import { contexto } from '@/lib/contexto';
 import { avaliarComIndices } from '@/lib/rules/motor';
 import { todas } from '@/lib/supabase/paginacao';
 import { registrarContratos, type ResultadoContratos } from './contratos';
+import { executarValidacao, type ResultadoValidacao } from './validacao';
 import { clienteAgente } from '@/lib/supabase/agentes';
 import { executarOperacao, fecharLotes, type DecisaoAtual, type ResultadoOperacao } from './operacao';
 
@@ -13,6 +14,7 @@ export const paraHora = (ts: string): HoraSimulada => ts.replace(' ', 'T').slice
 
 export interface ResultadoCiclo extends Partial<ResultadoOperacao> {
   contratos?: ResultadoContratos;
+  validacao?: ResultadoValidacao;
   hora: HoraSimulada;
   jaExecutado: boolean;
   titulosAvaliados: number;
@@ -73,8 +75,21 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
     // 5b) vínculo com contratos, competências e alertas dos desvios D01–D10
     const rc = await registrarContratos(op, sim, hora, contratos, idx);
 
+    // 6) agente de validação (conta própria) revisa o que a operação decidiu, antes do fechamento.
+    // Avalia a agenda inteira (sem tirar as retiradas) para ter as evidências de quem foi retirado.
+    const val = await clienteAgente('validacao');
+    const completa = avaliarComIndices(base, config, hora);
+    const rv = await executarValidacao(val, sim, hora, { avaliacoes: completa.avaliacoes, idx: completa.idx, config, contratos: completa.contratos });
+    if (rv.devolvidas || rv.retiradas) {
+      // o que a validação mexeu vale para o fechamento deste mesmo ciclo
+      const novo = await estadoAtual(op, sim);
+      for (const [t, d] of novo.atuais) estado.atuais.set(t, d);
+    }
+
     // 7) lotes que fecharam
+    const mexidos = new Set(rv.mexidos);
     for (const a of avaliacoes) {
+      if (mexidos.has(a.tituloId)) continue; // a validação já decidiu
       const atual = estado.atuais.get(a.tituloId);
       if (!atual || !['APROVADO', 'RECUSADO', 'DEVOLVIDO', 'ENVIADO'].includes(atual.destino)) {
         estado.atuais.set(a.tituloId, { titulo_id: a.tituloId, destino: a.decisao.destino, regras: a.regrasDisparadas, lote: a.lote, fechamento: a.fechamento, valor: a.valor });
@@ -85,7 +100,7 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
     await op.from('log_auditoria').upsert(
       {
         simulacao_id: sim, data_hora_simulada: horaTs, ator_tipo: 'motor_regras', acao: 'avaliou a agenda', entidade: 'ciclo',
-        entidade_id: hora, motivo: `${avaliacoes.length} títulos avaliados; ${r.decisoesGravadas} decisões mudaram; ${r.retiradas} retiradas; ${enviados} enviados; ${rc.alertas} alertas de contrato`,
+        entidade_id: hora, motivo: `${avaliacoes.length} títulos avaliados; ${r.decisoesGravadas} decisões mudaram; ${r.retiradas} retiradas; ${enviados} enviados; ${rc.alertas} alertas de contrato; validação: ${rv.revisadas} revisadas, ${rv.devolvidas} devolvidas`,
         chave: `ciclo|${hora}`,
       },
       { onConflict: 'simulacao_id,chave', ignoreDuplicates: true },
@@ -93,7 +108,7 @@ export async function executarCiclo(sim: string, hora: HoraSimulada): Promise<Re
 
     const duracaoMs = Date.now() - t0;
     await op.from('ciclos').update({ situacao: 'concluido', duracao_ms: duracaoMs, titulos_avaliados: avaliacoes.length }).eq('id', cicloId);
-    return { hora, jaExecutado: false, titulosAvaliados: avaliacoes.length, enviados, duracaoMs, contratos: rc, ...r };
+    return { hora, jaExecutado: false, titulosAvaliados: avaliacoes.length, enviados, duracaoMs, contratos: rc, validacao: rv, ...r };
   } catch (e) {
     await op.from('ciclos').update({ situacao: 'falhou', duracao_ms: Date.now() - t0 }).eq('id', cicloId);
     throw e;

@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
-/* Tokens do GoAudit. Claro por padrão; escuro segue o sistema.
+/* Tokens do GoAudit — espelham design-system/tokens.json. Claro por padrão; escuro segue o sistema.
    Cores ancoradas no brandbook Gogroup (azul protagonista, tinta #333333, fundo #f5f5f5). */
 :root {
+  /* Avisa o navegador que a página tem os dois temas: barras de rolagem, selects e
+     checkboxes nativos acompanham o tema do sistema. */
+  color-scheme: light dark;
+
   /* Paleta oficial Gogroup — usar só em blocos, gráficos e preenchimentos.
      Nunca texto branco sobre lime ou sky; não juntar laranja, vermelho e rosa. */
   --brand-blue: #2659a5;
@@ -31,6 +35,8 @@
   --info: var(--brand-blue);
   --info-soft: #e6eeff;
   --neutral-soft: #eceff3;
+  /* Texto sobre botões sólidos (accent, ok, danger). */
+  --on-solid: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -52,6 +58,10 @@
     --info: #6b9bff;
     --info-soft: #1a2a4d;
     --neutral-soft: #222a35;
+    /* Branco sobre os sólidos claros do tema escuro não passa (2,0–2,6:1). Texto escuro
+       (= bg) dá 7,0:1 no accent, 9,1:1 no ok e 7,6:1 no danger — correção indicada no
+       "Known gaps" do design system. */
+    --on-solid: #0d1016;
   }
 }
 
@@ -73,6 +83,7 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-neutral-soft: var(--neutral-soft);
+  --color-on-solid: var(--on-solid);
   --color-brand-blue: var(--brand-blue);
   --color-brand-lime: var(--brand-lime);
   --color-brand-amber: var(--brand-amber);
@@ -83,6 +94,20 @@
   --color-brand-white: var(--brand-white);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  html {
+    /* Checkbox e afins na cor de ação (navegadores sem suporte mantêm o visual nativo). */
+    accent-color: var(--accent);
+  }
+
+  /* Anel de foco visível de 2px em accent (o design system aponta a falta dele em
+     "Known gaps"). Fica na camada base para que utilitários possam ajustar caso a caso. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 body {

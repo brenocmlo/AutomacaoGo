@@ -254,8 +254,10 @@ interface Esperado {
   contrato_id: string; competencia: string;
   /** "conforme_contrato" quando o título deve sair com o selo; aprovador exigido (ex.: diretoria). */
   selo: string; aprovador_esperado: string;
+  /** Veredito do agente de validação sobre este título (devolver, manter ou retirar). */
+  validacao_esperada: string;
 }
-const ESPERADO_VAZIO = { alertas_esperados: '', avisar_esperado: '', contrato_id: '', competencia: '', selo: '', aprovador_esperado: '' };
+const ESPERADO_VAZIO = { alertas_esperados: '', avisar_esperado: '', contrato_id: '', competencia: '', selo: '', aprovador_esperado: '', validacao_esperada: '' };
 const cenarios: { id: string; linhas: Linhas; esperados: Esperado[] }[] = [];
 
 type EsperadoParcial = Omit<Esperado, 'cenario_id' | 'descricao' | 'hora_avaliacao' | keyof typeof ESPERADO_VAZIO> & Partial<typeof ESPERADO_VAZIO>;
@@ -608,6 +610,23 @@ function utilidadeEstavel(c: Contrato): number | null {
 const indiceIpca = (comp: string) =>
   indiceParaCompetencia(base.indicesReajuste, 'IPCA', comp, config.contratos.reajuste.defasagem_indice_meses) ?? 0;
 const mesNum = COMP.slice(5, 7);
+
+// C17 · Falso positivo que a validação devolve: troca bancária confirmada por ligação ao telefone certo,
+// só que escrito sem o DDD (a operação compara dígitos crus e retira; a validação lê o telefone)
+cenario('C17', 'Troca bancária confirmada por ligação ao telefone certo (sem DDD): retirada é falso positivo e a validação devolve ao lote', (add, esp) => {
+  const f = escolherFornecedor({ categorias: ['servicos', 'embalagens', 'insumos_capa'], forma: 'ted', valorMax: 3500 });
+  const valor = valorUnico(f, 3400);
+  const { t } = pacoteTed(add, f, valor);
+  const quando = '2026-10-28 10:00:00';
+  const telSemDdd = f.telefone_cadastrado.replace(/^(d{2})s*/, '');
+  const confirmacao = `ligação para o telefone do cadastro ${telSemDdd} em 28/10/2026; confirmado com o gerente financeiro`;
+  const troca = (campo: string, anterior: string, novo: string) => ({
+    alteracao_id: `AC9${pad(novoNum(), 5)}`, data_hora: quando, fornecedor_id: f.fornecedor_id, campo, valor_anterior: anterior, valor_novo: novo,
+    alterado_por: LANCADOR, origem: 'email', confirmacao_registrada: 'sim', confirmacao_como: confirmacao,
+  });
+  add('alteracoes_cadastro.csv', troca('banco', f.banco === '905' ? '146' : '905', f.banco), troca('agencia', '0001', f.agencia), troca('conta', '0000001-0', f.conta));
+  esp({ titulo_id: t.id, regras_esperadas: 'R07 R09', destino_esperado: 'RETIRADO', notificar_esperado: 'PS01', validacao_esperada: 'devolver' });
+});
 
 // C18 · Fee de agência cobrado duas vezes na mesma competência
 cenario('C18', 'Fee de agência cobrado duas vezes na mesma competência', (add, esp) => {

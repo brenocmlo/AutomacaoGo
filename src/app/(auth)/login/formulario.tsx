@@ -19,14 +19,14 @@ export function FormularioLogin({ contas }: { contas: Conta[] }) {
         <label className="block text-sm">
           <span className="text-muted">E-mail</span>
           <input name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 outline-none focus:border-accent" />
+            className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 focus:border-accent" />
         </label>
         <label className="block text-sm">
           <span className="text-muted">Senha</span>
-          <input name="senha" type="password" required className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 outline-none focus:border-accent" />
+          <input name="senha" type="password" required className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 focus:border-accent" />
         </label>
         {estado.erro && <p className="text-sm text-danger">{estado.erro}</p>}
-        <button disabled={pendente} className="w-full rounded-md bg-accent py-2 text-sm font-medium text-white disabled:opacity-60">
+        <button disabled={pendente} className="w-full rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-solid disabled:opacity-50">
           {pendente ? 'Entrando…' : 'Entrar'}
         </button>
       </form>

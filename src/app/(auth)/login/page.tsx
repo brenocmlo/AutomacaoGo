@@ -22,7 +22,7 @@ export default function Login() {
         <div className="mb-6 flex items-center gap-2">
           <ShieldCheck className="size-6 text-accent" />
           <div>
-            <h1 className="font-semibold">GoAudit</h1>
+            <h1 className="font-semibold tracking-tight">GoAudit</h1>
             <p className="text-xs text-muted">Auditoria de pagamentos antes de o dinheiro sair</p>
           </div>
         </div>
@@ -32,7 +32,7 @@ export default function Login() {
           <div className="space-y-3 text-sm">
             <p>O Supabase ainda não está configurado, então o painel roda em <strong>modo local</strong>, sem login.</p>
             <p className="text-muted">Preencha o <code>.env.local</code> (veja o <code>.env.example</code>) para ativar o login.</p>
-            <Link href="/" className="block w-full rounded-md bg-accent py-2 text-center font-medium text-white">Abrir o painel</Link>
+            <Link href="/" className="block w-full rounded-md bg-accent px-4 py-2 text-center font-medium text-on-solid">Abrir o painel</Link>
           </div>
         )}
       </Card>

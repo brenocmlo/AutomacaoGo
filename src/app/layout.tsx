@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -8,6 +8,16 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "GoAudit",
   description: "Auditoria de pagamentos antes de o dinheiro sair",
+};
+
+// Os dois temas do design system: o navegador pinta a tela e os controles nativos
+// no tema certo antes de o CSS carregar.
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d1016" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -16,7 +16,7 @@ export default async function VisaoGeral() {
         <p className="mt-1 text-sm text-muted">A simulação começa em 02/11/2026 08:00 e avança de hora em hora. A cada passo, o agente de operação confere a agenda e grava as decisões.</p>
         {p.usuario?.papel === 'admin' ? (
           <form action={reiniciarRelogio} className="mt-4">
-            <button className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white">Iniciar simulação</button>
+            <button className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-solid">Iniciar simulação</button>
           </form>
         ) : (
           <p className="mt-4 text-sm text-muted">Peça à administração da simulação para iniciar.</p>

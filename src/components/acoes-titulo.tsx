@@ -5,7 +5,11 @@ import { aprovar, decidir, recusar, type EstadoAcao } from '@/app/acoes';
 
 const inicial: EstadoAcao = { ok: null, erro: null };
 
-const botao = 'rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50';
+// Button do design system, tamanho pequeno: sólido para a decisão, outline para as alternativas.
+const botao = 'rounded-md border px-3 py-1.5 text-xs font-medium disabled:opacity-50';
+const solido = `${botao} border-transparent text-on-solid`;
+const outline = `${botao} border-border hover:bg-surface-2`;
+const campo = 'flex-1 rounded-md border border-border bg-bg px-3 py-1.5 text-xs focus:border-accent';
 
 /**
  * Ações humanas no título. Só aparecem para aprovadores, mas quem garante a regra
@@ -30,20 +34,20 @@ export function AcoesTitulo({ simulacaoId, tituloId, solicitacaoId, retirado }: 
         {solicitacaoId && (
           <form action={fAprovar}>
             <input type="hidden" name="solicitacao" value={solicitacaoId} />
-            <button disabled={pAprovar} className={`${botao} bg-ok text-white`}>Aprovar</button>
+            <button disabled={pAprovar} className={`${solido} bg-ok`}>Aprovar</button>
           </form>
         )}
-        {solicitacaoId && <button onClick={() => setModo('recusar')} className={`${botao} border border-border`}>Recusar</button>}
-        {retirado && <button onClick={() => setModo('devolver_ao_lote')} className={`${botao} border border-border`}>Devolver ao lote</button>}
-        {retirado && <button onClick={() => setModo('manter_retido')} className={`${botao} border border-border`}>Manter retido</button>}
-        {!retirado && !solicitacaoId && <button onClick={() => setModo('retirar_do_lote')} className={`${botao} border border-border`}>Retirar do lote</button>}
+        {solicitacaoId && <button onClick={() => setModo('recusar')} className={outline}>Recusar</button>}
+        {retirado && <button onClick={() => setModo('devolver_ao_lote')} className={outline}>Devolver ao lote</button>}
+        {retirado && <button onClick={() => setModo('manter_retido')} className={outline}>Manter retido</button>}
+        {!retirado && !solicitacaoId && <button onClick={() => setModo('retirar_do_lote')} className={outline}>Retirar do lote</button>}
       </div>
 
       {modo === 'recusar' && solicitacaoId && (
         <form action={fRecusar} className="flex gap-2">
           <input type="hidden" name="solicitacao" value={solicitacaoId} />
-          <input name="motivo" required placeholder="Motivo da recusa" className="flex-1 rounded-md border border-border bg-bg px-2 py-1 text-xs" />
-          <button disabled={pRecusar} className={`${botao} bg-danger text-white`}>Confirmar</button>
+          <input name="motivo" required placeholder="Motivo da recusa" className={campo} />
+          <button disabled={pRecusar} className={`${solido} bg-danger`}>Confirmar</button>
         </form>
       )}
       {modo && modo !== 'recusar' && (
@@ -51,8 +55,8 @@ export function AcoesTitulo({ simulacaoId, tituloId, solicitacaoId, retirado }: 
           <input type="hidden" name="simulacao" value={simulacaoId} />
           <input type="hidden" name="titulo" value={tituloId} />
           <input type="hidden" name="acao" value={modo} />
-          <input name="justificativa" required placeholder="Justificativa (obrigatória)" className="flex-1 rounded-md border border-border bg-bg px-2 py-1 text-xs" />
-          <button disabled={pDecidir} className={`${botao} bg-accent text-white`}>Confirmar</button>
+          <input name="justificativa" required placeholder="Justificativa (obrigatória)" className={campo} />
+          <button disabled={pDecidir} className={`${solido} bg-accent`}>Confirmar</button>
         </form>
       )}
       {ultimo?.erro && <p className="text-xs text-danger">{ultimo.erro}</p>}
