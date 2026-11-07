@@ -1,0 +1,4 @@
+titulo_id,fornecedor_id,numero_nf_digitado,oc_id,parcela,valor,vencimento,forma_pagamento,linha_digitavel,cnpj_beneficiario_boleto,origem_lancamento,lancado_por,data_lancamento,status,data_pagamento,banco_pagador,lote_remessa,historico,nivel_aprovacao
+TP900035,FP3172,900033,OC-90032,1/3,4900.00,2026-11-04,ted,,,xml_portal,usuario_03,2026-10-29 11:00:00,agendado,,Banco Meridiano,RM20261104-MER,NF 900033 parc 1/3 - Ecoprint,analista
+TP900036,FP3172,900033,OC-90032,2/3,4900.00,2026-11-04,ted,,,xml_portal,usuario_03,2026-10-29 12:00:00,agendado,,Banco Meridiano,RM20261104-MER,NF 900033 parc 2/3 - Ecoprint,analista
+TP900037,FP3172,900033,OC-90032,3/3,4900.00,2026-11-04,ted,,,xml_portal,usuario_03,2026-10-29 13:00:00,agendado,,Banco Meridiano,RM20261104-MER,NF 900033 parc 3/3 - Ecoprint,analista

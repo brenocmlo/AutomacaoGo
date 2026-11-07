@@ -1,0 +1,2 @@
+oc_id,cod_fornecedor_compras,cnpj_fornecedor,nome_fornecedor,data_emissao,descricao,tipo,valor_total,valor_mensal,condicao_pagamento,centro_custo,aprovado_por,data_aprovacao,status,quantidade,unidade,valor_unitario,solicitante,comprador,local_entrega,data_entrega_prevista
+OC-90001,FC8330,21922862000141,MOSAICO COMUNICACAO LTDA,2026-10-05,Pedido de teste do cenário (Campanha Black Friday),pontual,3850.37,,30 ddl,Marketing,Diego Prado,2026-10-06,aprovada,1000,serviço,3.8504,Bruno Sá,Diego Prado,,

@@ -1,0 +1,2 @@
+oc_id,cod_fornecedor_compras,cnpj_fornecedor,nome_fornecedor,data_emissao,descricao,tipo,valor_total,valor_mensal,condicao_pagamento,centro_custo,aprovado_por,data_aprovacao,status,quantidade,unidade,valor_unitario,solicitante,comprador,local_entrega,data_entrega_prevista
+OC-90005,FC8834,59641174000186,FRASCOS ALVORADA IND LTDA,2026-10-05,Pedido de teste do cenário (Envelopes de segurança - 4.100 un),pontual,4800.37,,28/35/42,Logística - Embalagens,Diego Prado,2026-10-06,aprovada,1000,un,4.8004,Fernanda Rocha,Carla Menezes,"CD2 - Pajuçara, Maracanaú/CE",2026-11-07

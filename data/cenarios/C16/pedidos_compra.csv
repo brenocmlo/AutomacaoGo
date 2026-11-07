@@ -1,0 +1,2 @@
+oc_id,cod_fornecedor_compras,cnpj_fornecedor,nome_fornecedor,data_emissao,descricao,tipo,valor_total,valor_mensal,condicao_pagamento,centro_custo,aprovado_por,data_aprovacao,status,quantidade,unidade,valor_unitario,solicitante,comprador,local_entrega,data_entrega_prevista
+OC-90045,FN6,44573563000144,BIOFORMULA TERCEIRIZACAO COSMETICA LTDA,2026-10-05,Pedido de teste do cenário (Protetor solar Kokeshi 60 ml - 5.100 un),pontual,4200.37,,28/56,GoBeauté - Auá,Helena Duarte,2026-10-06,aprovada,1000,un,4.2004,Mirela Benevides,Carla Menezes,"CD2 - Pajuçara, Maracanaú/CE",2026-11-03

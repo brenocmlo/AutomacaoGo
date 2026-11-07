@@ -1,0 +1,66 @@
+{
+  "$comentario": "Parâmetros que NÃO estão em politicas.csv. Tudo o que está em politicas.csv (alçadas, tolerâncias de 3 vias, custos, horários de lote) é lido de lá.",
+  "base_dir_padrao": "data/demo",
+  "relogio": {
+    "passo_minutos": 60
+  },
+  "chegada": {
+    "extrato_hora_disponivel": "18:00"
+  },
+  "urgencia": {
+    "imediata_horas_antes_fechamento": 2
+  },
+  "aprovacao": {
+    "margem_antes_fechamento_min": 30
+  },
+  "validacao": {
+    "valor_corte_liberacao": 20000,
+    "margem_revisao_min": 90
+  },
+  "categorias": {
+    "mercadoria": ["produto", "embalagens", "insumos_capa"],
+    "contrato_fixo": ["aluguel", "ti_saas", "servicos", "marketing_agencia"]
+  },
+  "regras": {
+    "R01": { "janela_vencimento_dias": 5 },
+    "R03": { "tolerancia_arredondamento": 0.10 },
+    "R07": { "janela_dias": 30 },
+    "R11": { "multiplo_mediana": 5, "minimo_historico": 3 },
+    "R12": {
+      "faixa_contrato_fixo": 0.05,
+      "faixa_utilidades": 0.30,
+      "meses_media_utilidades": 3
+    },
+    "R13": { "dias_admissao_recente": 45, "valor_alto": 20000 }
+  },
+  "acionamento": {
+    "dono_por_categoria": {
+      "produto": "PS04",
+      "embalagens": "PS04",
+      "insumos_capa": "PS05",
+      "servicos": "PS05",
+      "marketing_agencia": "PS06",
+      "influenciador": "PS06",
+      "frete": "PS07",
+      "aluguel": "PS10",
+      "utilidades": "PS10",
+      "ti_saas": "PS11"
+    },
+    "por_regra": {
+      "R01": ["PS01"],
+      "R02": ["PS02"],
+      "R03": ["PS01"],
+      "R04": ["@dono"],
+      "R05": ["PS01"],
+      "R06": ["PS01", "PS08"],
+      "R07": ["PS01"],
+      "R08": ["PS01"],
+      "R09": ["PS01"],
+      "R10": ["@dono"],
+      "R11": ["PS01"],
+      "R12": ["@dono"],
+      "R13": ["PS01"],
+      "R14": ["PS01", "PS08"]
+    }
+  }
+}

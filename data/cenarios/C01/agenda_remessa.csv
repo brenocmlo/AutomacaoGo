@@ -1,0 +1,3 @@
+lote_remessa,banco_pagador,data_prevista,horario_fechamento,titulo_id,fornecedor_id,valor,vencimento,forma_pagamento,destino_pagamento
+RM20261104-MER,Banco Meridiano,2026-11-04,10:00,TP900003,FP1190,3850.37,2026-11-04,ted,ted 289/1475/803977-6
+RM20261104-MER,Banco Meridiano,2026-11-04,10:00,TP900004,FP1190,3850.37,2026-11-04,ted,ted 289/1475/803977-6

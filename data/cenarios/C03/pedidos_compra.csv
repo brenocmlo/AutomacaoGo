@@ -1,0 +1,2 @@
+oc_id,cod_fornecedor_compras,cnpj_fornecedor,nome_fornecedor,data_emissao,descricao,tipo,valor_total,valor_mensal,condicao_pagamento,centro_custo,aprovado_por,data_aprovacao,status,quantidade,unidade,valor_unitario,solicitante,comprador,local_entrega,data_entrega_prevista
+OC-90009,FC8902,12076654000188,CAMILA FEITOSA COMUNICACAO DIGITAL LTDA,2026-10-05,Pedido de teste do cenário (Campanha TikTok),pontual,4350.37,,10 ddl,Marketing - Influência,Diego Prado,2026-10-06,aprovada,1000,serviço,4.3504,Bruno Sá,Diego Prado,,

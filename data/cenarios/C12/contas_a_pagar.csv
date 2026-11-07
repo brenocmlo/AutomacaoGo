@@ -1,0 +1,2 @@
+titulo_id,fornecedor_id,numero_nf_digitado,oc_id,parcela,valor,vencimento,forma_pagamento,linha_digitavel,cnpj_beneficiario_boleto,origem_lancamento,lancado_por,data_lancamento,status,data_pagamento,banco_pagador,lote_remessa,historico,nivel_aprovacao
+TP900040,FP5237,,OC-35918,1/1,73800.00,2026-11-04,boleto,36899163638845600090500009000381316200007380000,77.633.850/0001-51,manual,usuario_03,2026-10-29 10:00:00,agendado,,Banco Meridiano,RM20261104-MER,Aluguel - competência 11/2026 - Aldeota Office,diretoria

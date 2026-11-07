@@ -1,0 +1,2 @@
+dda_id,data_registro,cnpj_pagador,banco_cobrador,nome_banco_cobrador,beneficiario,cnpj_beneficiario,numero_documento,nosso_numero,valor,vencimento,linha_digitavel,situacao,data_situacao
+DDA9900017,2026-10-21 03:00:00,41208533000302,774,,Soluções Financeiras Express Ltda,19.876.543/0001-03,900015/1,20000900016,3920.37,2026-11-04,77492672950277664090200009000167416200000392037,em aberto,2026-10-21

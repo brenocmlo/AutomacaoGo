@@ -1,0 +1,2 @@
+titulo_id,fornecedor_id,numero_nf_digitado,oc_id,parcela,valor,vencimento,forma_pagamento,linha_digitavel,cnpj_beneficiario_boleto,origem_lancamento,lancado_por,data_lancamento,status,data_pagamento,banco_pagador,lote_remessa,historico,nivel_aprovacao
+TP900011,FP6986,900010,OC-90009,1/1,4350.37,2026-11-04,pix,,,xml_portal,usuario_03,2026-10-29 10:00:00,agendado,,Banco Litoral,RM20261104-LIT,NF 900010 parc 1/1 - @camilafeitosa,analista

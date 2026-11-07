@@ -1,0 +1,2 @@
+lote_remessa,banco_pagador,data_prevista,horario_fechamento,titulo_id,fornecedor_id,valor,vencimento,forma_pagamento,destino_pagamento
+RM20261104-LIT,Banco Litoral,2026-11-04,14:00,TP900011,FP6986,4350.37,2026-11-04,pix,pix 12076654000188

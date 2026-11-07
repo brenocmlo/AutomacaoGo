@@ -1,0 +1,2 @@
+oc_id,cod_fornecedor_compras,cnpj_fornecedor,nome_fornecedor,data_emissao,descricao,tipo,valor_total,valor_mensal,condicao_pagamento,centro_custo,aprovado_por,data_aprovacao,status,quantidade,unidade,valor_unitario,solicitante,comprador,local_entrega,data_entrega_prevista
+OC-90014,FC8253,64747211000175,FLEXCASE TPU LTDA,2026-10-05,Pedido de teste do cenário (Pigmentos CMYK - 1.600 un),pontual,3920.37,,28 ddl,Gocase - Produção,Diego Prado,2026-10-06,aprovada,1000,un,3.9204,Wagner Frota,Diego Prado,Fábrica Gocase - Eusébio/CE,2026-11-11

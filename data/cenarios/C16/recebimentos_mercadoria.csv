@@ -1,0 +1,2 @@
+recebimento_id,data_hora_recebimento,local_recebimento,cnpj_destinatario,chave_acesso,numero_nf,cnpj_emitente,oc_id,descricao_item,quantidade_recebida,unidade,volumes,conferente,situacao,observacao,entrada_estoque
+RC900047,2026-10-22 10:00:00,CD1 - Maracanaú/CE,41208533000302,23261044573563000730550010009000461274642747,900046,44573563000730,OC-90045,Item do cenário,1000,un,10,conf_cd1_01,conferido,,2026-10-22 14:00:00
